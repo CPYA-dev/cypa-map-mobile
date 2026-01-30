@@ -1,0 +1,910 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CPYA Map (Athens)</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
+    body { display: flex; flex-direction: column; }
+
+    #top { padding: 10px; border-bottom: 1px solid #ddd; background: #fff; }
+    #mapWrap { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; min-height: 400px; }
+
+    input { width: 70%; padding: 10px; font-size: 16px; }
+    button, select { padding: 10px; font-size: 16px; }
+
+    #out { margin-top: 8px; font-size: 14px; }
+    #recent { margin-top: 8px; font-size: 13px; opacity: 0.95; }
+    #status { margin-top: 6px; font-size: 13px; opacity: 0.75; }
+
+    #meta { display:none; } /* hidden until a search selects something */
+
+    a { text-decoration: none; }
+    .chip {
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid #ddd;
+      border-radius:999px;
+      margin:4px 6px 0 0;
+      background:#fff;
+      cursor:pointer;
+    }
+    .chip:hover { background:#f6f6f6; }
+    .small { font-size: 12px; opacity: 0.8; }
+
+    /* Floating cards on map */
+    .floatCard {
+      position: absolute;
+      z-index: 999;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(6px);
+      padding: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      font-size: 14px;
+      max-width: 280px;
+      pointer-events: auto;
+    }
+
+    /* Athens badge (NOTE: overlap issues can be tuned later, but now zoom is custom so it won't collide) */
+    #athensBadge {
+      left: 12px;
+      top: 12px;
+      right: auto;
+      max-width: none;
+      font-size: 13px;
+    }
+    #athensHint { margin-top: 4px; font-size: 12px; opacity: 0.75; }
+
+    /* Weather floating card */
+    #weatherCard {
+      right: 12px;
+      top: 12px;
+      display: none;
+    }
+
+    /* Custom horizontal zoom at bottom center */
+    .zoomBar{
+      position:absolute;
+      left:50%;
+      bottom:12px;
+      transform:translateX(-50%);
+      z-index:1000;
+      display:flex;
+      gap:10px;
+      pointer-events:auto;
+    }
+    .zoomBtn{
+      width:44px;
+      height:44px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      font-size:22px;
+      cursor:pointer;
+    }
+    .zoomBtn:active{ transform: scale(0.98); }
+
+    /* Route bar */
+    #routeBar {
+      display:none;
+      margin-top: 8px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fafafa;
+      font-size: 14px;
+    }
+    .modeBtn {
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+    .modeBtn.active {
+      border-color: #333;
+      font-weight: 700;
+    }
+
+    /* Directions panel (compact / interactive) */
+    #dirPanel {
+      display:none;
+      margin-top: 8px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="top">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <input id="q" placeholder='Search in Athens (e.g. "lidl" or "ok market marousi")' />
+      <button id="btn" type="button">Find</button>
+      <button id="locBtn" type="button">My location</button>
+      <button id="toggleTop" type="button" title="Collapse/expand">▾</button>
+    </div>
+
+    <div id="topBody">
+      <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <select id="nearSel">
+          <option value="cafe">☕ Cafes near me</option>
+          <option value="food">🍕 Food near me</option>
+          <option value="pharmacy">💊 Pharmacies near me</option>
+          <option value="supermarket">🛒 Supermarkets near me</option>
+        </select>
+        <button id="nearBtn" type="button">Near me</button>
+        <span class="small">(uses your location)</span>
+      </div>
+
+      <div id="recent"></div>
+      <div id="status"></div>
+
+      <div id="routeBar">
+        <b>Route:</b> <span id="routeSummary">—</span>
+        <span style="margin-left:8px;"></span>
+        <button id="modeDrive" class="modeBtn active" type="button">Driving</button>
+        <button id="modeWalk" class="modeBtn" type="button">Walking</button>
+      </div>
+
+      <!-- Compact / interactive directions -->
+      <div id="dirPanel">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <b>Directions</b>
+          <button id="toggleAllSteps" class="modeBtn" type="button">Show all</button>
+        </div>
+
+        <div id="nextStepBox" style="margin-top:10px; padding:10px; border:1px solid #eee; border-radius:10px; background:#fafafa;">
+          <div style="font-size:13px; opacity:.75;">Next step</div>
+          <div id="nextStepText" style="margin-top:4px; font-size:16px; font-weight:700;">—</div>
+          <div id="nextStepDist" style="margin-top:4px; font-size:13px; opacity:.75;">—</div>
+
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <button id="prevStep" class="modeBtn" type="button">Prev</button>
+            <button id="nextStep" class="modeBtn" type="button">Next</button>
+          </div>
+        </div>
+
+        <ol id="dirList" style="display:none; margin:10px 0 0 18px; padding:0;"></ol>
+      </div>
+
+      <div id="out"></div>
+
+      <div id="meta" style="margin-top:8px; font-size:14px; opacity:.9;">
+        <div>🕒 Local time: <span id="localTime">—</span></div>
+        <div>🧭 Compass: <span id="headingText">—</span></div>
+
+        <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+          <div id="compass" style="width:44px; height:44px; border:2px solid #333; border-radius:50%;
+               display:flex; align-items:center; justify-content:center; position:relative;">
+            <div id="needle" style="width:2px; height:18px; background:#333; position:absolute; top:6px;"></div>
+            <div style="font-size:10px; position:absolute; bottom:4px;">N</div>
+          </div>
+          <button id="enableCompass" type="button" style="display:none;">Enable Compass</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mapWrap">
+    <div id="map"></div>
+
+    <div id="athensBadge" class="floatCard">
+      <b>CPYA Map — Athens</b>
+      <div id="athensHint">Search is optimized for the Athens metro area.</div>
+    </div>
+
+    <div id="weatherCard" class="floatCard"></div>
+
+    <!-- Custom bottom-center zoom -->
+    <div id="zoomBar" class="zoomBar">
+      <button id="zoomOut" class="zoomBtn" type="button">−</button>
+      <button id="zoomIn" class="zoomBtn" type="button">+</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Athens bbox ----------
+    const ATHENS_BBOX = { west: 23.65, south: 37.85, east: 24.05, north: 38.10 };
+    const ATHENS_BOUNDS = L.latLngBounds(
+      [ATHENS_BBOX.south, ATHENS_BBOX.west],
+      [ATHENS_BBOX.north, ATHENS_BBOX.east]
+    );
+
+    // Make bounds feel ~1.5x bigger (less blocking)
+    const ATHENS_VIEW_BOUNDS = ATHENS_BOUNDS.pad(0.50);
+
+    // ---------- DOM ----------
+    const qEl = document.getElementById("q");
+    const btn = document.getElementById("btn");
+    const locBtn = document.getElementById("locBtn");
+    const nearSel = document.getElementById("nearSel");
+    const nearBtn = document.getElementById("nearBtn");
+
+    const recentEl = document.getElementById("recent");
+    const statusEl = document.getElementById("status");
+    const outEl = document.getElementById("out");
+
+    const toggleTopBtn = document.getElementById("toggleTop");
+    const topBody = document.getElementById("topBody");
+
+    const metaEl = document.getElementById("meta");
+    const localTimeEl = document.getElementById("localTime");
+
+    const headingTextEl = document.getElementById("headingText");
+    const needle = document.getElementById("needle");
+    const enableCompassBtn = document.getElementById("enableCompass");
+
+    const weatherCard = document.getElementById("weatherCard");
+
+    const routeBar = document.getElementById("routeBar");
+    const routeSummaryEl = document.getElementById("routeSummary");
+    const modeDriveBtn = document.getElementById("modeDrive");
+    const modeWalkBtn = document.getElementById("modeWalk");
+
+    const dirPanel = document.getElementById("dirPanel");
+    const dirList = document.getElementById("dirList");
+    const toggleAllStepsBtn = document.getElementById("toggleAllSteps");
+    const nextStepTextEl = document.getElementById("nextStepText");
+    const nextStepDistEl = document.getElementById("nextStepDist");
+    const prevStepBtn = document.getElementById("prevStep");
+    const nextStepBtn = document.getElementById("nextStep");
+
+    // ---------- MAP (disable default zoom controls) ----------
+    const map = L.map("map", {
+      maxBounds: ATHENS_VIEW_BOUNDS,
+      maxBoundsViscosity: 0.35,
+      zoomControl: false
+    }).fitBounds(ATHENS_BOUNDS);
+
+    map.setMinZoom(map.getZoom() - 1);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+    const allMarkers = L.layerGroup().addTo(map);
+
+    // ---------- STATE ----------
+    let myLocation = null;
+    let myMarker = null;
+    let routeLine = null;
+    let clickPin = null;
+
+    let results = [];
+    let top5 = [];
+    let collapsed = false;
+
+    let travelMode = "driving"; // "driving" | "walking"
+    let lastPicked = null;
+
+    // directions state
+    let currentSteps = [];
+    let stepIndex = 0;
+    let showAllSteps = false;
+
+    // ---------- Helpers ----------
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    function inAthens(lat, lon) {
+      return lon >= ATHENS_BBOX.west && lon <= ATHENS_BBOX.east &&
+             lat >= ATHENS_BBOX.south && lat <= ATHENS_BBOX.north;
+    }
+
+    function googleUrl(lat, lon) {
+      return `https://www.google.com/maps?q=${lat},${lon}`;
+    }
+
+    function googleDirectionsUrl(fromLat, fromLon, toLat, toLon) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLon}&destination=${toLat},${toLon}&travelmode=${travelMode}`;
+    }
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = (x) => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function formatDistance(km) {
+      if (!Number.isFinite(km)) return "";
+      if (km < 1) return `${Math.round(km * 1000)} m`;
+      return `${km.toFixed(1)} km`;
+    }
+
+    function minutesForWalking(km) {
+      const speedKmh = 4.8;
+      return Math.max(1, Math.round((km / speedKmh) * 60));
+    }
+
+    function shouldShowAddress(x) {
+      const name = String(x?.name || "");
+      const addr = String(x?.address || "");
+      if (!addr) return false;
+
+      const nameLooksLikeFull = name.includes(",") && name.length > 40;
+      if (nameLooksLikeFull) return false;
+
+      const n = name.toLowerCase();
+      const a = addr.toLowerCase();
+      if (n.includes(a) || a.includes(n)) return false;
+
+      return true;
+    }
+
+    function weatherIcon(code) {
+      code = Number(code);
+      if (code === 0) return "☀️";
+      if (code <= 2) return "⛅";
+      if (code === 3) return "☁️";
+      if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
+      if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
+      if (code === 45 || code === 48) return "🌫️";
+      if (code >= 95) return "⛈️";
+      return "🌦️";
+    }
+
+    function showMetaPanels() {
+      metaEl.style.display = "block";
+      weatherCard.style.display = "block";
+    }
+
+    function setModeButtons() {
+      modeDriveBtn.classList.toggle("active", travelMode === "driving");
+      modeWalkBtn.classList.toggle("active", travelMode === "walking");
+    }
+
+    // ---------- Directions helpers ----------
+    function stepInstruction(step) {
+      const t = step?.maneuver?.type || "";
+      const m = step?.maneuver?.modifier || "";
+      const road = (step?.name || "").trim();
+
+      if (t === "depart") return `Start${road ? " on " + road : ""}`;
+      if (t === "arrive") return "Arrive at destination";
+
+      if (t === "roundabout") {
+        const ex = step?.maneuver?.exit;
+        return `At the roundabout, take exit ${ex || ""}${road ? " onto " + road : ""}`.trim();
+      }
+
+      if (t === "turn") {
+        // fix awkward "turn straight" wording
+        if (m === "straight") return `Go straight${road ? " on " + road : ""}`.trim();
+        return `Turn ${m || ""}${road ? " onto " + road : ""}`.trim();
+      }
+
+      if (t === "continue") {
+        if (m === "straight") return `Continue straight${road ? " on " + road : ""}`.trim();
+        return `Continue${road ? " on " + road : ""}`.trim();
+      }
+
+      if (t === "merge") return `Merge${road ? " onto " + road : ""}`.trim();
+      if (t === "fork") return `Keep ${m || ""}${road ? " on " + road : ""}`.trim();
+      if (t === "new name") return `Continue${road ? " on " + road : ""}`.trim();
+
+      // fallback
+      return `${t}${m ? " (" + m + ")" : ""}${road ? " — " + road : ""}`.trim();
+    }
+
+    function renderDirections(steps) {
+      currentSteps = Array.isArray(steps) ? steps : [];
+      stepIndex = 0;
+
+      if (!currentSteps.length) {
+        dirPanel.style.display = "none";
+        dirList.innerHTML = "";
+        return;
+      }
+
+      dirPanel.style.display = "block";
+
+      function metersLabel(meters) {
+        return meters >= 1000 ? `${(meters/1000).toFixed(1)} km` : `${Math.round(meters)} m`;
+      }
+
+      function renderStep() {
+        const s = currentSteps[stepIndex];
+        const inst = stepInstruction(s);
+        const meters = Number(s?.distance || 0);
+
+        nextStepTextEl.textContent = inst || "—";
+        nextStepDistEl.textContent = meters ? `In ${metersLabel(meters)}` : "";
+
+        prevStepBtn.disabled = stepIndex <= 0;
+        nextStepBtn.disabled = stepIndex >= currentSteps.length - 1;
+      }
+
+      // full list (optional)
+      dirList.innerHTML = currentSteps.slice(0, 60).map(s => {
+        const inst = stepInstruction(s);
+        const meters = Number(s.distance || 0);
+        const suffix = meters ? metersLabel(meters) : "";
+        return `<li style="margin:6px 0;">${escapeHtml(inst)} <span style="opacity:.65">· ${escapeHtml(suffix)}</span></li>`;
+      }).join("");
+
+      dirList.style.display = showAllSteps ? "block" : "none";
+      toggleAllStepsBtn.textContent = showAllSteps ? "Hide all" : "Show all";
+
+      renderStep();
+
+      prevStepBtn.onclick = () => { if (stepIndex > 0) { stepIndex--; renderStep(); } };
+      nextStepBtn.onclick = () => { if (stepIndex < currentSteps.length - 1) { stepIndex++; renderStep(); } };
+
+      toggleAllStepsBtn.onclick = () => {
+        showAllSteps = !showAllSteps;
+        dirList.style.display = showAllSteps ? "block" : "none";
+        toggleAllStepsBtn.textContent = showAllSteps ? "Hide all" : "Show all";
+      };
+    }
+
+    // ---------- Recents ----------
+    const RECENT_KEY = "cpya_recent_searches";
+
+    function loadRecent() {
+      try {
+        const arr = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRecent(q) {
+      const cur = loadRecent().filter(x => String(x).toLowerCase() !== String(q).toLowerCase());
+      cur.unshift(q);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(cur.slice(0, 6)));
+      renderRecent();
+    }
+
+    function renderRecent() {
+      const arr = loadRecent();
+      if (!arr.length) { recentEl.innerHTML = ""; return; }
+
+      recentEl.innerHTML = `<b>Recent:</b> ` + arr.map((s, idx) =>
+        `<span class="chip" data-recent="${idx}">${escapeHtml(s)}</span>`
+      ).join("");
+
+      recentEl.querySelectorAll("[data-recent]").forEach(el => {
+        el.addEventListener("click", () => {
+          const i = Number(el.getAttribute("data-recent"));
+          qEl.value = arr[i];
+          doSearch();
+        });
+      });
+    }
+
+    // ---------- Weather + time ----------
+    async function updateLocalTime(lat, lon) {
+      localTimeEl.textContent = "…";
+      try {
+        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+        const d = await r.json();
+        const t = d?.data?.current?.time;
+        localTimeEl.textContent = t ? String(t).replace("T", " ") : "—";
+      } catch {
+        localTimeEl.textContent = "—";
+      }
+    }
+
+    async function updateWeather(lat, lon) {
+      weatherCard.innerHTML = `<b>Weather</b><br>Loading…`;
+      try {
+        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+        const d = await r.json();
+        if (!d?.ok) { weatherCard.innerHTML = `<b>Weather</b><br>Unavailable`; return; }
+
+        const c = d.data?.current;
+        if (!c) { weatherCard.innerHTML = `<b>Weather</b><br>Unavailable`; return; }
+
+        const icon = weatherIcon(c.weather_code);
+        weatherCard.innerHTML =
+          `<b>Weather</b><br>
+           ${icon} <b>${Math.round(c.temperature_2m)}°C</b> (feels ${Math.round(c.apparent_temperature)}°C)<br>
+           Wind: ${Math.round(c.wind_speed_10m)} km/h<br>
+           <span class="small">${String(c.time || "").replace("T"," ")}</span>`;
+      } catch {
+        weatherCard.innerHTML = `<b>Weather</b><br>Error`;
+      }
+    }
+
+    // ---------- Routing ----------
+    async function drawRouteTo(destLat, destLon) {
+      if (!myLocation) return;
+
+      routeBar.style.display = "block";
+
+      // walking = estimate + straight dashed line (no turn-by-turn)
+      if (travelMode === "walking") {
+        const km = haversineKm(myLocation.lat, myLocation.lon, destLat, destLon);
+        const mins = minutesForWalking(km);
+
+        routeSummaryEl.textContent = `${formatDistance(km)} • ~${mins} min (walking)`;
+        renderDirections([]); // hide directions for walking estimate
+
+        if (routeLine) routeLine.remove();
+        routeLine = L.polyline(
+          [[myLocation.lat, myLocation.lon], [destLat, destLon]],
+          { dashArray: "6 8" }
+        ).addTo(map);
+
+        return;
+      }
+
+      // driving = OSRM with steps=true for turn-by-turn
+      routeSummaryEl.textContent = "Calculating…";
+
+      const url =
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${myLocation.lon},${myLocation.lat};${destLon},${destLat}` +
+        `?overview=full&geometries=geojson&steps=true`;
+
+      try {
+        const r = await fetch(url);
+        const j = await r.json();
+
+        const route = j.routes?.[0];
+        const coords = route?.geometry?.coordinates;
+
+        if (!coords) {
+          routeSummaryEl.textContent = "No route found.";
+          renderDirections([]);
+          if (routeLine) { routeLine.remove(); routeLine = null; }
+          return;
+        }
+
+        const latlngs = coords.map(c => [c[1], c[0]]);
+        if (routeLine) routeLine.remove();
+        routeLine = L.polyline(latlngs).addTo(map);
+
+        const km = route.distance / 1000;
+        const mins = Math.max(1, Math.round(route.duration / 60));
+        routeSummaryEl.textContent = `${formatDistance(km)} • ~${mins} min (driving)`;
+
+        const steps = j.routes?.[0]?.legs?.[0]?.steps || [];
+        renderDirections(steps);
+      } catch {
+        routeSummaryEl.textContent = "Route error.";
+        renderDirections([]);
+      }
+    }
+
+    // ---------- UI Render ----------
+    function renderMarkers(list) {
+      allMarkers.clearLayers();
+      const bounds = [];
+
+      list.forEach((x) => {
+        bounds.push([x.lat, x.lon]);
+        const m = L.marker([x.lat, x.lon]).addTo(allMarkers);
+        m.on("click", () => pickResult(x, m));
+      });
+
+      if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
+    }
+
+    function renderTopList(list) {
+      top5 = list.slice(0, 5);
+
+      outEl.innerHTML =
+        `<b>Suggested matches:</b><br>` +
+        top5.map((x, i) => {
+          let dist = "";
+          if (myLocation) {
+            const km = haversineKm(myLocation.lat, myLocation.lon, x.lat, x.lon);
+            dist = ` <span style="opacity:.7">· ${formatDistance(km)}</span>`;
+          }
+
+          const addr = shouldShowAddress(x)
+            ? `<div style="opacity:.75; font-size:12px; margin-left:18px;">${escapeHtml(x.address)}</div>`
+            : "";
+
+          return `<div style="margin:6px 0">
+            <a href="#" data-top="${i}">${i + 1}. ${escapeHtml(x.name)}</a>${dist}
+            ${addr}
+          </div>`;
+        }).join("");
+
+      outEl.querySelectorAll("[data-top]").forEach(a => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          const i = Number(a.getAttribute("data-top"));
+          pickResult(top5[i]);
+        });
+      });
+    }
+
+    function pickResult(x, markerLayer = null) {
+      if (!x) return;
+
+      lastPicked = x;
+      showMetaPanels();
+
+      map.setView([x.lat, x.lon], 16);
+      updateLocalTime(x.lat, x.lon);
+      updateWeather(x.lat, x.lon);
+
+      if (myLocation) drawRouteTo(x.lat, x.lon);
+      else {
+        routeBar.style.display = "none";
+        renderDirections([]);
+      }
+
+      const osmLink = x.osmUrl || `https://www.openstreetmap.org/?mlat=${x.lat}&mlon=${x.lon}#map=18/${x.lat}/${x.lon}`;
+
+      let distHtml = "";
+      let dirHtml = "";
+
+      if (myLocation) {
+        const km = haversineKm(myLocation.lat, myLocation.lon, x.lat, x.lon);
+        distHtml = `<div style="opacity:.75; margin-top:4px;">📍 Distance: ${formatDistance(km)}</div>`;
+        dirHtml = `<div style="margin-top:6px;">
+          <a target="_blank" href="${googleDirectionsUrl(myLocation.lat, myLocation.lon, x.lat, x.lon)}">Directions (Google Maps)</a>
+        </div>`;
+      }
+
+      const addrHtml = shouldShowAddress(x)
+        ? `<div style="opacity:.85; margin-top:4px;">${escapeHtml(x.address)}</div>`
+        : "";
+
+      const popupHtml =
+        `<b>${escapeHtml(x.name || "Place")}</b>` +
+        addrHtml +
+        distHtml +
+        `<div style="margin-top:6px;">
+           <a target="_blank" href="${osmLink}">Open in OpenStreetMap</a><br>
+           <a target="_blank" href="${googleUrl(x.lat, x.lon)}">Open in Google Maps</a>
+         </div>` +
+        dirHtml;
+
+      if (markerLayer) markerLayer.bindPopup(popupHtml).openPopup();
+    }
+
+    // ---------- Actions ----------
+    async function doSearch() {
+      const q = qEl.value.trim();
+      if (!q) return;
+
+      saveRecent(q);
+
+      statusEl.textContent = "Searching…";
+      outEl.textContent = "";
+      if (routeLine) { routeLine.remove(); routeLine = null; }
+      routeBar.style.display = "none";
+      renderDirections([]);
+
+      let d;
+      try {
+        const r = await fetch("/where", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q })
+        });
+        d = await r.json();
+      } catch {
+        statusEl.textContent = "Network error.";
+        return;
+      }
+
+      if (!d?.found || !Array.isArray(d.results) || !d.results.length) {
+        statusEl.textContent = "No results.";
+        allMarkers.clearLayers();
+        return;
+      }
+
+      results = d.results.filter(x => inAthens(Number(x.lat), Number(x.lon)));
+
+      if (!results.length) {
+        statusEl.textContent = "Results found, but outside Athens area.";
+        allMarkers.clearLayers();
+        return;
+      }
+
+      statusEl.textContent = `Found ${results.length} results.`;
+      renderMarkers(results);
+      renderTopList(results);
+      pickResult(results[0]);
+    }
+
+    async function locateMe() {
+      if (!navigator.geolocation) {
+        alert("Your browser does not support location.");
+        return;
+      }
+
+      locBtn.disabled = true;
+      locBtn.textContent = "Locating…";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          myLocation = { lat, lon };
+
+          if (myMarker) myMarker.remove();
+          myMarker = L.circleMarker([lat, lon], { radius: 8 }).addTo(map)
+            .bindPopup("You are here").openPopup();
+
+          if (inAthens(lat, lon)) map.setView([lat, lon], 14);
+          else map.fitBounds(ATHENS_BOUNDS);
+
+          locBtn.disabled = false;
+          locBtn.textContent = "My location";
+
+          if (results.length) renderTopList(results);
+          if (lastPicked && myLocation) {
+            routeBar.style.display = "block";
+            drawRouteTo(lastPicked.lat, lastPicked.lon);
+          }
+        },
+        (err) => {
+          alert("Location error: " + err.message);
+          locBtn.disabled = false;
+          locBtn.textContent = "My location";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    async function nearMe() {
+      if (!myLocation) {
+        alert("First allow location (My location).");
+        return;
+      }
+
+      statusEl.textContent = "Searching near you…";
+      outEl.textContent = "";
+      if (routeLine) { routeLine.remove(); routeLine = null; }
+      routeBar.style.display = "none";
+      renderDirections([]);
+
+      const cat = nearSel.value;
+
+      let d;
+      try {
+        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
+        d = await r.json();
+      } catch {
+        statusEl.textContent = "Network error.";
+        return;
+      }
+
+      if (!d?.found || !Array.isArray(d.results) || !d.results.length) {
+        statusEl.textContent = "Nothing found near you.";
+        allMarkers.clearLayers();
+        return;
+      }
+
+      results = d.results.filter(x => inAthens(Number(x.lat), Number(x.lon)));
+      if (!results.length) {
+        statusEl.textContent = "Nearby results exist, but outside Athens area.";
+        allMarkers.clearLayers();
+        return;
+      }
+
+      statusEl.textContent = `Found ${results.length} nearby.`;
+      renderMarkers(results);
+      renderTopList(results);
+      pickResult(results[0]);
+    }
+
+    // ---------- Collapse ----------
+    function setCollapsed(state) {
+      collapsed = !!state;
+      topBody.style.display = collapsed ? "none" : "block";
+      toggleTopBtn.textContent = collapsed ? "▸" : "▾";
+      setTimeout(() => map.invalidateSize(), 50);
+    }
+
+    // ---------- Compass ----------
+    function setHeading(deg) {
+      needle.style.transform = `rotate(${deg}deg)`;
+      headingTextEl.textContent = `${Math.round(deg)}°`;
+    }
+
+    async function enableCompass() {
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function") {
+        try {
+          const res = await DeviceOrientationEvent.requestPermission();
+          if (res !== "granted") throw new Error("permission denied");
+        } catch {
+          headingTextEl.textContent = "Permission denied";
+          return;
+        }
+      }
+
+      window.addEventListener("deviceorientation", (e) => {
+        if (typeof e.alpha === "number") setHeading(e.alpha);
+      }, true);
+
+      enableCompassBtn.style.display = "none";
+    }
+
+    // ---------- Map click -> pin -> route ----------
+    map.on("click", (e) => {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
+
+      if (clickPin) clickPin.remove();
+      clickPin = L.marker([lat, lon]).addTo(map).bindPopup("Pinned location").openPopup();
+
+      lastPicked = { lat, lon, name: "Pinned location", address: "" };
+
+      showMetaPanels();
+      updateLocalTime(lat, lon);
+      updateWeather(lat, lon);
+
+      if (myLocation) drawRouteTo(lat, lon);
+      else {
+        routeBar.style.display = "none";
+        renderDirections([]);
+        alert("Press 'My location' first to route.");
+      }
+    });
+
+    // ---------- Init ----------
+    window.addEventListener("DOMContentLoaded", () => {
+      renderRecent();
+      setModeButtons();
+
+      btn.addEventListener("click", doSearch);
+      qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+
+      locBtn.addEventListener("click", locateMe);
+      nearBtn.addEventListener("click", nearMe);
+
+      toggleTopBtn.addEventListener("click", () => setCollapsed(!collapsed));
+
+      // Custom zoom buttons
+      document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
+      document.getElementById("zoomOut").addEventListener("click", () => map.zoomOut());
+
+      // Mode toggle
+      modeDriveBtn.addEventListener("click", () => {
+        travelMode = "driving";
+        setModeButtons();
+        if (lastPicked && myLocation) drawRouteTo(lastPicked.lat, lastPicked.lon);
+      });
+
+      modeWalkBtn.addEventListener("click", () => {
+        travelMode = "walking";
+        setModeButtons();
+        if (lastPicked && myLocation) drawRouteTo(lastPicked.lat, lastPicked.lon);
+      });
+
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function") {
+        enableCompassBtn.style.display = "inline-block";
+        enableCompassBtn.addEventListener("click", enableCompass);
+      } else if ("DeviceOrientationEvent" in window) {
+        enableCompass();
+      } else {
+        headingTextEl.textContent = "Not supported";
+      }
+    });
+  </script>
+</body>
+</html>
