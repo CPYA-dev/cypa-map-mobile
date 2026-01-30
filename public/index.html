@@ -1,15 +1,17 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>CPYA Map (Athens) — v1.2</title>
+  <title>Athens Navigator</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root{
+      --bg:#07080b;
+      --card: rgba(17,19,24,.92);
       --text:#e8eaed;
       --muted:#aab0bb;
       --line:rgba(255,255,255,.10);
@@ -20,46 +22,113 @@
       --safe-top: env(safe-area-inset-top, 0px);
       --accent:#4aa3ff;
       --danger:#ff4d4d;
+      --ok:#00d084;
     }
-    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #07080b; color: var(--text); }
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
     #app { height: 100%; position:relative; }
     #map { height: 100%; width: 100%; }
 
     .card{
-      background: rgba(17,19,24,.92);
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
     }
 
-    #panel{
-      position: relative;
-      z-index: 2000;
-      background: rgba(8,10,14,.75);
-      border-bottom: 1px solid var(--line);
-      padding: calc(10px + var(--safe-top)) 12px 10px;
+    /* Splash */
+    #splash{
+      position: fixed; inset: 0; z-index: 9000;
+      display:flex; align-items:center; justify-content:center;
+      background: #07080b;
+      transition: opacity .35s ease;
     }
+    #splash.hidden{ opacity:0; pointer-events:none; }
+    #splashInner{ width: min(420px, 86vw); text-align:center; }
+    #splashLogo{
+      width: 100%;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(135deg, rgba(74,163,255,.22), rgba(255,255,255,.06));
+      padding: 22px 16px;
+    }
+    #splashLogo h1{ margin:0; font-size: 22px; letter-spacing:.2px; }
+    #splashLogo p{ margin:8px 0 0; color: var(--muted); font-size: 13px; }
+    #splashMeta{ margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    #splashMeta b{ color: var(--text); }
 
-    #panelInner{
+    /* Toasts */
+    #toastWrap{
+      position: fixed;
+      top: calc(12px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6000;
       display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+      flex-direction:column;
+      gap:8px;
+      width: min(520px, 92vw);
+      pointer-events:none;
     }
-
-    .input{
-      flex: 1 1 220px;
-      min-width: 160px;
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      border: 1px solid var(--line);
+    .toast{
+      pointer-events:auto;
+      padding: 10px 12px;
       border-radius: 14px;
-      padding: 12px 12px;
-      font-size: 16px;
-      outline:none;
+      border: 1px solid var(--line);
+      background: rgba(17,19,24,.92);
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
     }
+    .toast .tTitle{ font-size: 13px; font-weight: 900; margin-bottom: 2px; }
+    .toast .tMsg{ font-size: 13px; color: var(--muted); white-space:pre-line; }
+    .toast .x{ margin-left:auto; cursor:pointer; opacity:.8; user-select:none; }
+    .toast.info{ border-color: rgba(74,163,255,.35); }
+    .toast.bad{ border-color: rgba(255,77,77,.35); }
+    .toast.ok{ border-color: rgba(0,208,132,.35); }
 
+    /* Loading overlay */
+    #loadingOverlay{ position: fixed; inset: 0; display:none; align-items:center; justify-content:center; z-index: 5000; background: rgba(0,0,0,.35); backdrop-filter: blur(3px); }
+    .loaderCard{ padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line); background: rgba(17,19,24,.92); box-shadow: var(--shadow); display:flex; align-items:center; gap:12px; max-width: 92vw; }
+    .spinner{ width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.2); border-top-color: rgba(255,255,255,.9); border-radius: 999px; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Weather */
+    #weatherCard{
+      position: fixed;
+      left: 12px;
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1200;
+      padding: 10px 12px;
+      border-radius: 16px;
+      display:none;
+      min-width: 180px;
+      max-width: min(320px, 80vw);
+    }
+    #weatherCard .line{ font-size: 13px; color: var(--muted); margin-top: 2px; }
+    #weatherCard .big{ font-size: 18px; font-weight: 900; }
+    #weatherCard .tiny{ font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    /* Nav card */
+    #navCard{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1200;
+      padding: 10px 12px;
+      border-radius: 18px;
+      display:none;
+      width: min(680px, 92vw);
+    }
+    #navTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 6px; }
+    #navInstr{ font-size: 15px; font-weight: 900; line-height: 1.2; }
+    #navSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
+    #navBtns{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+
+    /* Panel + controls */
     .btn{
       background: rgba(255,255,255,.08);
       color: var(--text);
@@ -74,13 +143,18 @@
     .btn:hover{ background: rgba(255,255,255,.12); }
     .btn.primary{ background: rgba(74,163,255,.18); border-color: rgba(74,163,255,.35); }
     .btn.danger{ background: rgba(255,77,77,.14); border-color: rgba(255,77,77,.35); }
+    .btn.slim{ padding: 10px 10px; font-size: 14px; border-radius: 12px; }
 
-    .row{
-      margin-top: 10px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+    .input{
+      flex: 1 1 240px;
+      min-width: 160px;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px;
+      font-size: 16px;
+      outline:none;
     }
     select{
       background: rgba(255,255,255,.06);
@@ -92,12 +166,35 @@
     }
     .small { font-size: 12px; color: var(--muted); }
 
-    /* Suggestions dropdown */
+    /* Panel: mobile bottom sheet */
+    #panel{
+      z-index: 2000;
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      background: rgba(8,10,14,.90);
+      border-top: 1px solid var(--line);
+      border-top-left-radius: var(--radius2);
+      border-top-right-radius: var(--radius2);
+      padding: 10px 12px calc(10px + var(--safe-bottom));
+      transform: translateY(0);
+      transition: transform .22s ease;
+      will-change: transform;
+    }
+    #panelHandle{
+      width: 44px; height: 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.22);
+      margin: 4px auto 10px;
+      cursor: grab; user-select:none;
+    }
+    #panelInner{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    #panelRow{ margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
     #suggestBox{
       position:absolute;
-      top: calc(12px + var(--safe-top) + 52px);
-      left: 12px;
-      right: 12px;
+      left: 12px; right: 12px;
+      bottom: calc(10px + var(--safe-bottom) + 112px);
       display:none;
       z-index: 2200;
       border-radius: 16px;
@@ -113,7 +210,7 @@
     #suggestBox .item:hover{ background: rgba(255,255,255,.06); }
     #suggestBox .sub{ font-size:12px; color: var(--muted); margin-top:3px; }
 
-    /* Pills */
+    /* Chips */
     .pill{
       display:inline-flex;
       align-items:center;
@@ -142,157 +239,125 @@
       border: 1px solid var(--line);
       background: rgba(255,255,255,.04);
     }
-    .res{
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      cursor:pointer;
-    }
+    .res{ padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06); cursor:pointer; }
     .res:last-child{ border-bottom:none; }
     .res:hover{ background: rgba(255,255,255,.06); }
     .res.selected{ background: rgba(74,163,255,.16); outline: 1px solid rgba(74,163,255,.35); }
-    .resTitle{ font-size: 14px; font-weight: 800; }
+    .resTitle{ font-size: 14px; font-weight: 900; }
     .resMeta{ font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-    /* Loading */
-    #loadingOverlay{
-      position: fixed; inset: 0;
-      display:none;
-      align-items:center; justify-content:center;
-      z-index: 5000;
-      background: rgba(0,0,0,.40);
-      backdrop-filter: blur(3px);
-    }
-    .loaderCard{
-      padding: 14px 16px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(17,19,24,.92);
-      box-shadow: var(--shadow);
-      display:flex; align-items:center; gap:12px;
-      max-width: 92vw;
-    }
-    .spinner{
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,.2);
-      border-top-color: rgba(255,255,255,.9);
-      border-radius: 999px;
-      animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Toasts */
-    #toastWrap{
-      position: fixed;
-      top: calc(12px + var(--safe-top));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 6000;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      width: min(520px, 92vw);
-      pointer-events:none;
-    }
-    .toast{
-      pointer-events:auto;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: rgba(17,19,24,.92);
-      box-shadow: var(--shadow);
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-    }
-    .toast .tTitle{ font-size: 13px; font-weight: 800; margin-bottom: 2px; }
-    .toast .tMsg{ font-size: 13px; color: var(--muted); }
-    .toast .x{ margin-left:auto; cursor:pointer; opacity:.8; user-select:none; }
-    .toast.info{ border-color: rgba(74,163,255,.35); }
-    .toast.bad{ border-color: rgba(255,77,77,.35); }
-    .toast.ok{ border-color: rgba(0,208,132,.35); }
-
-    /* Weather */
-    #weatherCard{
-      position: fixed;
-      left: 12px;
-      bottom: calc(12px + var(--safe-bottom));
-      z-index: 1200;
-      padding: 10px 12px;
-      border-radius: 16px;
-      display:none;
-      min-width: 180px;
-      max-width: min(320px, 80vw);
-    }
-    #weatherCard .line{ font-size: 13px; color: var(--muted); margin-top: 2px; }
-    #weatherCard .big{ font-size: 18px; font-weight: 900; }
-    #weatherCard .tiny{ font-size: 11px; color: var(--muted); margin-top: 6px; }
-
-    /* Nav card */
-    #navCard{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(12px + var(--safe-bottom));
-      z-index: 1200;
-      padding: 10px 12px;
-      border-radius: 18px;
-      display:none;
-      width: min(580px, 92vw);
-    }
-    #navTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 6px; }
-    #navInstr{ font-size: 15px; font-weight: 900; line-height: 1.2; }
-    #navSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
-    #navBtns{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
-
-    /* Mobile bottom sheet */
-    @media (max-width: 720px){
-      #panel{
-        position: fixed;
-        left: 0; right: 0; bottom: 0; top: auto;
-        border-bottom: none;
-        border-top: 1px solid var(--line);
-        padding: 10px 12px calc(10px + var(--safe-bottom));
-        background: rgba(8,10,14,.90);
-        z-index: 2000;
-        border-top-left-radius: var(--radius2);
-        border-top-right-radius: var(--radius2);
-      }
-      #panelHandle{
-        width: 44px;
-        height: 5px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.22);
-        margin: 4px auto 10px;
-      }
-      #suggestBox{ top: auto; bottom: calc(10px + var(--safe-bottom) + 110px); }
-      #weatherCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
-      #navCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
-    }
-
-    /* Desktop panel on right */
+    /* Desktop: right drawer panel */
     @media (min-width: 721px){
       #panel{
-        position: fixed;
         top: calc(12px + var(--safe-top));
-        right: 12px;
+        bottom: auto;
         left: auto;
-        width: 400px;
+        right: 12px;
+        width: 420px;
         border: 1px solid var(--line);
         border-radius: var(--radius2);
-        background: rgba(8,10,14,.80);
         padding: 12px;
+        transform: translateX(0);
       }
-      #panelHandle{ display:none; }
-      #suggestBox{
-        top: 62px;
-        left: 12px;
-        right: 12px;
+      #suggestBox{ bottom:auto; top: 62px; left: 12px; right: 12px; }
+      #panelHandle{
+        width: 46px; height: 34px;
+        margin: 0 0 10px auto;
+        display:flex; align-items:center; justify-content:center;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: 14px;
+        cursor:pointer;
       }
     }
+
+    /* Custom zoom pill */
+    #zoomPill{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1500;
+      display:flex;
+      overflow:hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(17,19,24,.88);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .zoomBtn{
+      padding: 10px 14px;
+      cursor:pointer;
+      user-select:none;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 18px;
+    }
+    .zoomBtn:hover{ background: rgba(255,255,255,.08); }
+    .zoomSep{ width: 1px; background: rgba(255,255,255,.12); }
+
+    /* Modal */
+    #modal{
+      position: fixed; inset: 0; z-index: 8000;
+      display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(3px);
+      padding: 14px;
+    }
+    #modalCard{
+      width: min(720px, 96vw);
+      max-height: min(78vh, 740px);
+      overflow:auto;
+      padding: 14px;
+      border-radius: 18px;
+    }
+    .mTitle{ font-weight: 900; font-size: 16px; margin-bottom: 10px; }
+    .mRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+    .mItem{
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .mItem b{ font-weight:900; }
+    .mItem .meta{ color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .mBtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .mInput{
+      width: 100%;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 10px 10px;
+      outline:none;
+    }
+
+    /* Leaflet: hide default zoom controls (we use pill) */
+    .leaflet-control-zoom{ display:none !important; }
   </style>
 </head>
 
 <body>
+  <div id="splash">
+    <div id="splashInner">
+      <div id="splashLogo">
+        <h1>Athens Navigator</h1>
+        <p>Search • Save places • Navigate</p>
+      </div>
+      <div id="splashMeta">
+        <div><b>Athens Navigator</b> · v1.3</div>
+        <div>© 2025 Athens Navigator. All rights reserved.</div>
+      </div>
+    </div>
+  </div>
+
   <div id="toastWrap"></div>
 
   <div id="loadingOverlay">
@@ -313,32 +378,50 @@
         <div id="navInstr">—</div>
         <div id="navSub">—</div>
       </div>
-      <button class="btn" id="navClose" title="End navigation">✕</button>
+      <button class="btn slim" id="navClose" title="End navigation">✕</button>
     </div>
     <div id="navBtns">
-      <button class="btn" id="navPrev">◀ Prev</button>
-      <button class="btn primary" id="navNext">Next ▶</button>
-      <button class="btn" id="navVoice">🔈 Voice: Off</button>
-      <button class="btn" id="navFollow">🧭 Follow: Off</button>
-      <button class="btn" id="navCenter">📍 Center: Me</button>
+      <button class="btn slim" id="navPrev" title="Previous step">◀</button>
+      <button class="btn slim primary" id="navNext" title="Next step">▶</button>
+      <button class="btn slim" id="navVoice">🔈 Voice: Off</button>
+      <button class="btn slim" id="navFollow">🧭 Follow: On</button>
+      <button class="btn slim" id="navCenter">📍 Center</button>
+    </div>
+  </div>
+
+  <div id="zoomPill" aria-label="Zoom">
+    <button class="zoomBtn" id="zoomOut" title="Zoom out">−</button>
+    <div class="zoomSep"></div>
+    <button class="zoomBtn" id="zoomIn" title="Zoom in">+</button>
+  </div>
+
+  <div id="modal">
+    <div id="modalCard" class="card">
+      <div class="mRow" style="justify-content:space-between;">
+        <div class="mTitle" id="modalTitle">Saved places</div>
+        <button class="btn slim" id="modalClose">✕</button>
+      </div>
+      <div id="modalBody"></div>
     </div>
   </div>
 
   <div id="app">
-    <div id="panel">
-      <div id="panelHandle"></div>
+    <div id="map"></div>
+
+    <div id="panel" class="card">
+      <div id="panelHandle">⋮⋮</div>
 
       <div id="panelInner">
         <input id="q" class="input" placeholder="Search…" autocomplete="off" />
         <button id="btn" class="btn primary" type="button">Find</button>
-        <button id="locBtn" class="btn" type="button">Live tracking: Off</button>
-        <button id="togglePanel" class="btn" type="button" title="Collapse/expand">▾</button>
+        <button id="myLocBtn" class="btn" type="button">My location</button>
+        <button id="panelToggleBtn" class="btn" type="button" title="Open/Close panel">▾</button>
       </div>
 
       <div id="suggestBox" class="card"></div>
 
       <div id="panelBody">
-        <div class="row">
+        <div id="panelRow">
           <select id="nearSel">
             <option value="cafe">☕ Cafes near me</option>
             <option value="food">🍕 Food near me</option>
@@ -352,11 +435,8 @@
             <option value="driving">🚗 Driving</option>
           </select>
 
-          <select id="voiceStyle">
-            <option value="off">Voice: Off</option>
-            <option value="soft">Voice: Soft</option>
-            <option value="normal">Voice: Normal</option>
-          </select>
+          <button id="savedBtn" class="btn" type="button">⭐ Saved places</button>
+          <button id="trackBtn" class="btn" type="button">Live tracking: On</button>
 
           <button id="clearBtn" class="btn danger" type="button" style="display:none;">Clear</button>
           <span class="small" id="status">Ready</span>
@@ -375,1214 +455,1389 @@
         <div class="small" style="margin-top:10px; opacity:.9" id="offlineHint"></div>
       </div>
     </div>
-
-    <div id="map"></div>
   </div>
 
   <script>
-    // =========================
-    // Athens bounds
-    // =========================
-    const ATHENS_BBOX = { west: 23.45, south: 37.75, east: 24.25, north: 38.20 };
-    const ATHENS_BOUNDS = L.latLngBounds([ATHENS_BBOX.south, ATHENS_BBOX.west],[ATHENS_BBOX.north, ATHENS_BBOX.east]);
+  const APP_VERSION = "1.3";
 
-    function inAthens(lat, lon) {
-      return lon >= ATHENS_BBOX.west && lon <= ATHENS_BBOX.east &&
-             lat >= ATHENS_BBOX.south && lat <= ATHENS_BBOX.north;
-    }
-    function clampToAthens(lat, lon){
-      const clampedLat = Math.min(Math.max(lat, ATHENS_BBOX.south), ATHENS_BBOX.north);
-      const clampedLon = Math.min(Math.max(lon, ATHENS_BBOX.west), ATHENS_BBOX.east);
-      return { lat: clampedLat, lon: clampedLon };
-    }
+  // Athens bounds (looser so you can reach Piraeus etc.)
+  const ATHENS_BBOX = { west: 23.35, south: 37.70, east: 24.35, north: 38.30 };
+  const ATHENS_BOUNDS = L.latLngBounds([ATHENS_BBOX.south, ATHENS_BBOX.west],[ATHENS_BBOX.north, ATHENS_BBOX.east]);
 
-    // =========================
-    // DOM
-    // =========================
-    const qEl = document.getElementById("q");
-    const btn = document.getElementById("btn");
-    const locBtn = document.getElementById("locBtn");
-    const togglePanelBtn = document.getElementById("togglePanel");
-    const panelBody = document.getElementById("panelBody");
-
-    const nearSel = document.getElementById("nearSel");
-    const nearBtn = document.getElementById("nearBtn");
-    const modeSel = document.getElementById("modeSel");
-    const voiceStyleSel = document.getElementById("voiceStyle");
-
-    const statusEl = document.getElementById("status");
-    const chipsEl = document.getElementById("chips");
-
-    const resultsWrap = document.getElementById("resultsWrap");
-    const resultsList = document.getElementById("resultsList");
-    const resultsMeta = document.getElementById("resultsMeta");
-    const clearBtn = document.getElementById("clearBtn");
-
-    const suggestBox = document.getElementById("suggestBox");
-    const loadingOverlay = document.getElementById("loadingOverlay");
-    const loadingText = document.getElementById("loadingText");
-    const toastWrap = document.getElementById("toastWrap");
-
-    const weatherCard = document.getElementById("weatherCard");
-
-    const navCard = document.getElementById("navCard");
-    const navInstr = document.getElementById("navInstr");
-    const navSub = document.getElementById("navSub");
-    const navPrev = document.getElementById("navPrev");
-    const navNext = document.getElementById("navNext");
-    const navClose = document.getElementById("navClose");
-    const navVoice = document.getElementById("navVoice");
-    const navFollowBtn = document.getElementById("navFollow");
-    const navCenter = document.getElementById("navCenter");
-
-    const offlineHint = document.getElementById("offlineHint");
-
-    // =========================
-    // Random placeholder examples (60)
-    // =========================
-    const PLACEHOLDERS = [
-      'Search: "lidl"', 'Search: "AB supermarket"', 'Search: "Σκλαβενίτης"', 'Search: "pharmacy"',
-      'Search: "φαρμακείο"', 'Search: "νοσοκομείο"', 'Search: "hospital"', 'Search: "souvlaki"',
-      'Search: "καφέ"', 'Search: "coffee"', 'Search: "gym"', 'Search: "piraeus port"',
-      'Search: "metro"', 'Search: "σταθμός μετρό"', 'Search: "bus stop"', 'Search: "στάση λεωφορείου"',
-      'Search: "kifisia"', 'Search: "marousi"', 'Search: "glyfada"', 'Search: "pagrati"',
-      'Search: "kolonaki"', 'Search: "ilisia"', 'Search: "kallithea"', 'Search: "nea smyrni"',
-      'Search: "kerameikos"', 'Search: "exarchia"', 'Search: "monastiraki"', 'Search: "syntagma"',
-      'Search: "acropolis"', 'Search: "Πλάκα"', 'Search: "museum"', 'Search: "μουσείο"',
-      'Search: "police"', 'Search: "αστυνομία"', 'Search: "post office"', 'Search: "ΕΛΤΑ"',
-      'Search: "bank"', 'Search: "ATM"', 'Search: "parking"', 'Search: "fuel"',
-      'Search: "βενζινάδικο"', 'Search: "hospital evaggelismos"', 'Search: "Λαϊκό Νοσοκομείο"',
-      'Search: "airport"', 'Search: "αεροδρόμιο"', 'Search: "port"', 'Search: "λιμάνι"',
-      'Search: "ikea"', 'Search: "public store"', 'Search: "cosmote"', 'Search: "vodafone"',
-      'Search: "restaurant"', 'Search: "taverna"', 'Search: "bakery"', 'Search: "φούρνος"',
-      'Search: "hair salon"', 'Search: "barber"', 'Search: "cinema"', 'Search: "θέατρο"'
-    ];
-    qEl.placeholder = PLACEHOLDERS[Math.floor(Math.random()*PLACEHOLDERS.length)];
-
-    // =========================
-    // Map
-    // =========================
-    const map = L.map("map", { maxBounds: ATHENS_BOUNDS, maxBoundsViscosity: 0.65 }).fitBounds(ATHENS_BOUNDS);
-    map.setMinZoom(map.getZoom() - 2);
-
-    // Canvas renderer helps perf with many markers
-    const canvasRenderer = L.canvas({ padding: 0.5 });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
-
-    const markersLayer = L.layerGroup().addTo(map);
-    const savedLayer = L.layerGroup().addTo(map);
-
-    let routeLine = null;
-    let destMarker = null;
-
-    // Live tracking markers
-    let myDot = null;
-    let myArrow = null;
-
-    // =========================
-    // State
-    // =========================
-    let collapsed = false;
-    let results = [];
-    let selectedIndex = -1;
-
-    let myLocation = null; // {lat, lon, lastLat, lastLon, lastUpdate, bearingDeg}
-    let trackingOn = false;
-    let followOn = false;
-    let watchId = null;
-
-    let nav = {
-      mode: "walking",
-      dest: null,
-      steps: [],
-      stepIndex: 0,
-      distanceM: null,
-      durationS: null,
-      voiceOn: false
+  function inAthens(lat, lon) {
+    return lon >= ATHENS_BBOX.west && lon <= ATHENS_BBOX.east &&
+           lat >= ATHENS_BBOX.south && lat <= ATHENS_BBOX.north;
+  }
+  function clampToAthens(lat, lon){
+    return {
+      lat: Math.min(Math.max(lat, ATHENS_BBOX.south), ATHENS_BBOX.north),
+      lon: Math.min(Math.max(lon, ATHENS_BBOX.west), ATHENS_BBOX.east)
     };
+  }
 
-    // Saved places
-    const SAVED_KEY = "cpya_saved_places_v12";
-    const RECENT_KEY = "cpya_recent_searches_v12";
-    const UI_KEY = "cpya_ui_state_v12";
-    const LAST_RESULTS_KEY = "cpya_last_results_v12";
+  // DOM
+  const splash = document.getElementById("splash");
+  const qEl = document.getElementById("q");
+  const btn = document.getElementById("btn");
+  const myLocBtn = document.getElementById("myLocBtn");
+  const nearSel = document.getElementById("nearSel");
+  const nearBtn = document.getElementById("nearBtn");
+  const modeSel = document.getElementById("modeSel");
+  const savedBtn = document.getElementById("savedBtn");
+  const trackBtn = document.getElementById("trackBtn");
+  const panelToggleBtn = document.getElementById("panelToggleBtn");
+  const statusEl = document.getElementById("status");
+  const chipsEl = document.getElementById("chips");
+  const resultsWrap = document.getElementById("resultsWrap");
+  const resultsList = document.getElementById("resultsList");
+  const resultsMeta = document.getElementById("resultsMeta");
+  const clearBtn = document.getElementById("clearBtn");
+  const suggestBox = document.getElementById("suggestBox");
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  const loadingText = document.getElementById("loadingText");
+  const toastWrap = document.getElementById("toastWrap");
+  const weatherCard = document.getElementById("weatherCard");
 
-    const SAVED_SLOTS = [
-      { key:"home", label:"Home", icon:"🏠" },
-      { key:"school", label:"School", icon:"🎓" },
-      { key:"work", label:"Work", icon:"💼" },
-      { key:"custom", label:"Custom", icon:"⭐" }
+  const navCard = document.getElementById("navCard");
+  const navInstr = document.getElementById("navInstr");
+  const navSub = document.getElementById("navSub");
+  const navPrev = document.getElementById("navPrev");
+  const navNext = document.getElementById("navNext");
+  const navClose = document.getElementById("navClose");
+  const navVoice = document.getElementById("navVoice");
+  const navFollowBtn = document.getElementById("navFollow");
+  const navCenter = document.getElementById("navCenter");
+
+  const zoomInBtn = document.getElementById("zoomIn");
+  const zoomOutBtn = document.getElementById("zoomOut");
+
+  const panel = document.getElementById("panel");
+  const panelHandle = document.getElementById("panelHandle");
+  const offlineHint = document.getElementById("offlineHint");
+
+  const modal = document.getElementById("modal");
+  const modalClose = document.getElementById("modalClose");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+
+  // Placeholders
+  const PLACEHOLDERS = [
+    'Search: "lidl"', 'Search: "AB supermarket"', 'Search: "Σκλαβενίτης"', 'Search: "pharmacy"',
+    'Search: "φαρμακείο"', 'Search: "νοσοκομείο"', 'Search: "hospital"', 'Search: "souvlaki"',
+    'Search: "καφέ"', 'Search: "coffee"', 'Search: "gym"', 'Search: "piraeus port"',
+    'Search: "metro"', 'Search: "στάση λεωφορείου"', 'Search: "marousi"', 'Search: "glyfada"',
+    'Search: "exarchia"', 'Search: "monastiraki"', 'Search: "syntagma"', 'Search: "acropolis"',
+    'Search: "Πλάκα"', 'Search: "museum"', 'Search: "bank"', 'Search: "ATM"', 'Search: "parking"',
+    'Search: "ikea"', 'Search: "public store"', 'Search: "vodafone"', 'Search: "cosmote"'
+  ];
+  qEl.placeholder = PLACEHOLDERS[Math.floor(Math.random()*PLACEHOLDERS.length)];
+
+  // Map
+  const map = L.map("map", {
+    zoomControl: false,
+    maxBounds: ATHENS_BOUNDS,
+    maxBoundsViscosity: 0.65
+  }).fitBounds(ATHENS_BOUNDS);
+
+  map.setMinZoom(map.getZoom() - 2);
+
+  const canvasRenderer = L.canvas({ padding: 0.5 });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+  const markersLayer = L.layerGroup().addTo(map);
+  const savedLayer = L.layerGroup().addTo(map);
+
+  let routeLine = null;
+  let destMarker = null;
+
+  // Tracking markers
+  let myDot = null;
+  let myArrow = null;
+
+  // Storage keys
+  const SAVED_KEY = "athnav_saved_v13"; // saved places model
+  const RECENT_KEY = "athnav_recent_v13";
+  const UI_KEY = "athnav_ui_v13";
+  const LAST_RESULTS_KEY = "athnav_last_results_v13";
+
+  // State
+  let results = [];
+  let selectedIndex = -1;
+
+  let myLocation = null; // {lat, lon, bearingDeg, lastUpdate, lastRerouteAt}
+  let trackingOn = true;
+  let followOn = true;
+  let watchId = null;
+
+  let nav = {
+    mode: "walking",
+    dest: null,
+    steps: [],
+    stepIndex: 0,
+    distanceM: null,
+    durationS: null,
+    voiceStyle: "off" // off | soft
+  };
+
+  // For saving via map click
+  let armSave = null; // {type:"fixed", key} | {type:"custom", name}
+
+  // Panel open state
+  let panelOpen = true;
+
+  // Utils
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
+  function setLoading(on, text="Working…") {
+    loadingText.textContent = text;
+    loadingOverlay.style.display = on ? "flex" : "none";
+  }
+  function toast(title, msg, type="info", ms=3200) {
+    const el = document.createElement("div");
+    el.className = `toast ${type}`;
+    el.innerHTML = `
+      <div>
+        <div class="tTitle">${escapeHtml(title)}</div>
+        <div class="tMsg">${escapeHtml(msg)}</div>
+      </div>
+      <div class="x">✕</div>
+    `;
+    el.querySelector(".x").addEventListener("click", () => el.remove());
+    toastWrap.appendChild(el);
+    setTimeout(() => { if (el.isConnected) el.remove(); }, ms);
+  }
+  function setStatus(s){ statusEl.textContent = s; }
+
+  function loadJson(key, fallback) {
+    try { const v = JSON.parse(localStorage.getItem(key) || ""); return (v ?? fallback); }
+    catch { return fallback; }
+  }
+  function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+  function uid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  function haversineMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = (x) => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function bearingDeg(lat1, lon1, lat2, lon2){
+    const toRad = (x) => x * Math.PI / 180;
+    const toDeg = (x) => x * 180 / Math.PI;
+    const φ1 = toRad(lat1), φ2 = toRad(lat2);
+    const Δλ = toRad(lon2 - lon1);
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+    const θ = Math.atan2(y, x);
+    return (toDeg(θ) + 360) % 360;
+  }
+
+  function formatDistanceMeters(m){
+    if (!Number.isFinite(m)) return "—";
+    if (m < 1000) return `${Math.round(m)} m`;
+    return `${(m/1000).toFixed(1)} km`;
+  }
+  function formatDuration(s){
+    if (!Number.isFinite(s)) return "—";
+    const min = Math.round(s/60);
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min/60);
+    const rem = min % 60;
+    return `${h} h ${rem} min`;
+  }
+
+  function estimateDurationSeconds(distanceM, mode){
+    const walkingMps = 4.8 * 1000 / 3600;
+    const drivingMps = 22  * 1000 / 3600;
+    const mps = (mode === "driving") ? drivingMps : walkingMps;
+    return distanceM / mps;
+  }
+
+  function normalizeAddress(name, address){
+    if (!address) return "";
+    const n = String(name||"").trim().toLowerCase();
+    const a = String(address||"").trim();
+    if (n && a.toLowerCase().startsWith(n) && n.length > 3) return "";
+    if (a.length > 80) return a.slice(0,80) + "…";
+    return a;
+  }
+
+  // Offline hint
+  function updateOfflineHint(){
+    offlineHint.textContent = navigator.onLine
+      ? ""
+      : "Offline: saved places + last results only. New searches/routes need internet.";
+  }
+  window.addEventListener("online", updateOfflineHint);
+  window.addEventListener("offline", updateOfflineHint);
+
+  // Service Worker (app shell cache)
+  async function registerSW(){
+    if (!("serviceWorker" in navigator)) return;
+    try{
+      const swCode = `
+        const CACHE = "athens-navigator-v13";
+        self.addEventListener("install", (e) => e.waitUntil(self.skipWaiting()));
+        self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+        self.addEventListener("fetch", (e) => {
+          if (e.request.method !== "GET") return;
+          e.respondWith((async()=>{
+            const cache = await caches.open(CACHE);
+            const cached = await cache.match(e.request);
+            if (cached) return cached;
+            try{
+              const res = await fetch(e.request);
+              const url = new URL(e.request.url);
+              if (url.origin === location.origin) cache.put(e.request, res.clone());
+              return res;
+            } catch(err){
+              const url = new URL(e.request.url);
+              if (url.origin === location.origin){
+                const fallback = await cache.match(location.origin + "/");
+                if (fallback) return fallback;
+              }
+              throw err;
+            }
+          })());
+        });
+      `;
+      const blob = new Blob([swCode], { type: "text/javascript" });
+      const swUrl = URL.createObjectURL(blob);
+      await navigator.serviceWorker.register(swUrl);
+    } catch {}
+  }
+
+  // Saved places model
+  function loadSaved(){
+    const o = loadJson(SAVED_KEY, { home:null, school:null, work:null, custom:[] });
+    if (!o.custom) o.custom = [];
+    return o;
+  }
+  function saveSaved(o){
+    if (!o.custom) o.custom = [];
+    saveJson(SAVED_KEY, o);
+    renderChips();
+    renderSavedMarkers();
+  }
+  function setFixedPlace(key, lat, lon){
+    const saved = loadSaved();
+    saved[key] = { lat, lon, updatedAt: Date.now() };
+    saveSaved(saved);
+  }
+  function addCustomPlace(name, lat, lon){
+    const saved = loadSaved();
+    const clean = String(name||"Place").trim() || "Place";
+    saved.custom.unshift({ id: uid(), name: clean, lat, lon, createdAt: Date.now() });
+    if (saved.custom.length > 200) saved.custom = saved.custom.slice(0,200);
+    saveSaved(saved);
+  }
+  function updateCustomName(id, newName){
+    const saved = loadSaved();
+    const item = saved.custom.find(x => x.id === id);
+    if (item){
+      item.name = String(newName||"").trim() || item.name;
+      saveSaved(saved);
+    }
+  }
+  function deleteCustom(id){
+    const saved = loadSaved();
+    saved.custom = saved.custom.filter(x => x.id !== id);
+    saveSaved(saved);
+  }
+
+  // Saved markers
+  function roundIcon(emoji){
+    return L.divIcon({
+      className: "",
+      html: `
+        <div style="
+          display:flex;align-items:center;justify-content:center;
+          width:34px;height:34px;border-radius:999px;
+          border:1px solid rgba(255,255,255,.18);
+          background:rgba(17,19,24,.92);
+          box-shadow: var(--shadow);
+          font-size:17px;
+        ">${escapeHtml(emoji)}</div>
+      `,
+      iconSize:[34,34],
+      iconAnchor:[17,17]
+    });
+  }
+  function customIcon(name){
+    const initial = (String(name||"C").trim()[0] || "★").toUpperCase();
+    return L.divIcon({
+      className:"",
+      html: `
+        <div style="
+          width:34px;height:34px;border-radius:999px;
+          border:1px solid rgba(255,255,255,.18);
+          background:rgba(17,19,24,.92);
+          box-shadow: var(--shadow);
+          display:flex;align-items:center;justify-content:center;
+          font-weight:900;font-size:14px;
+        ">${escapeHtml(initial)}</div>
+      `,
+      iconSize:[34,34],
+      iconAnchor:[17,17]
+    });
+  }
+  function renderSavedMarkers(){
+    savedLayer.clearLayers();
+    const saved = loadSaved();
+
+    const fixed = [
+      { key:"home", label:"Home", emoji:"🏠" },
+      { key:"school", label:"School", emoji:"🎓" },
+      { key:"work", label:"Work", emoji:"💼" },
     ];
 
-    let armSaveKey = null; // when set -> next map click saves this slot
+    fixed.forEach(slot => {
+      const p = saved[slot.key];
+      if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return;
+      const m = L.marker([p.lat, p.lon], { icon: roundIcon(slot.emoji) }).addTo(savedLayer);
+      m.bindTooltip(`${slot.emoji} ${slot.label}`, { direction:"top", offset:[0,-10], opacity:0.95 });
+      m.on("click", ()=> setDestination({ lat:p.lat, lon:p.lon, name: slot.label, address:"" }));
+    });
 
-    // =========================
-    // Utils
-    // =========================
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[m]));
-    }
+    saved.custom.forEach(item => {
+      if (!Number.isFinite(item.lat) || !Number.isFinite(item.lon)) return;
+      const m = L.marker([item.lat, item.lon], { icon: customIcon(item.name) }).addTo(savedLayer);
+      m.bindTooltip(item.name, { direction:"top", offset:[0,-10], opacity:0.95 });
+      m.on("click", ()=> setDestination({ lat:item.lat, lon:item.lon, name: item.name, address:"" }));
+    });
+  }
 
-    function setLoading(on, text="Working…"){
-      loadingText.textContent = text;
-      loadingOverlay.style.display = on ? "flex" : "none";
-    }
+  // Recents
+  function loadRecent(){
+    const arr = loadJson(RECENT_KEY, []);
+    return Array.isArray(arr) ? arr : [];
+  }
+  function saveRecent(q){
+    const cur = loadRecent().filter(x => String(x).toLowerCase() !== String(q).toLowerCase());
+    cur.unshift(q);
+    saveJson(RECENT_KEY, cur.slice(0, 8));
+    renderChips();
+  }
 
-    function toast(title, msg, type="info", ms=3200){
-      const el = document.createElement("div");
-      el.className = `toast ${type}`;
-      el.innerHTML = `
-        <div>
-          <div class="tTitle">${escapeHtml(title)}</div>
-          <div class="tMsg">${escapeHtml(msg)}</div>
-        </div>
-        <div class="x">✕</div>
-      `;
-      el.querySelector(".x").addEventListener("click", () => el.remove());
-      toastWrap.appendChild(el);
-      setTimeout(() => { if (el.isConnected) el.remove(); }, ms);
-    }
+  // Chips UI
+  function renderChips(){
+    const rec = loadRecent();
+    const saved = loadSaved();
 
-    function setStatus(s){ statusEl.textContent = s; }
+    const parts = [];
+    parts.push(`<span class="pill" data-fixed="home">🏠 ${saved.home ? "Home" : "Set Home"}</span>`);
+    parts.push(`<span class="pill" data-fixed="school">🎓 ${saved.school ? "School" : "Set School"}</span>`);
+    parts.push(`<span class="pill" data-fixed="work">💼 ${saved.work ? "Work" : "Set Work"}</span>`);
+    parts.push(`<span class="pill" data-custom-add="1">⭐ Add place</span>`);
 
-    function formatDistanceMeters(m){
-      if (!Number.isFinite(m)) return "—";
-      if (m < 1000) return `${Math.round(m)} m`;
-      return `${(m/1000).toFixed(1)} km`;
-    }
+    rec.slice(0,6).forEach((s,i) => parts.push(`<span class="pill" data-recent="${i}">${escapeHtml(s)}</span>`));
+    chipsEl.innerHTML = parts.join("");
 
-    function formatDuration(s){
-      if (!Number.isFinite(s)) return "—";
-      const min = Math.round(s/60);
-      if (min < 60) return `${min} min`;
-      const h = Math.floor(min/60);
-      const rem = min % 60;
-      return `${h} h ${rem} min`;
-    }
+    chipsEl.querySelectorAll("[data-recent]").forEach(el => {
+      el.addEventListener("click", ()=>{
+        const idx = Number(el.getAttribute("data-recent"));
+        const q = rec[idx];
+        qEl.value = q;
+        doSearch(q);
+      });
+    });
 
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = (x) => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
+    chipsEl.querySelectorAll("[data-fixed]").forEach(el => {
+      el.addEventListener("click", ()=>{
+        const key = el.getAttribute("data-fixed");
+        if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+          setFixedPlace(key, nav.dest.lat, nav.dest.lon);
+          toast("Saved", `${key} saved from selected destination.`, "ok");
+          return;
+        }
+        armSave = { type:"fixed", key };
+        toast("Set saved place", `Tap on the map to set ${key}.`, "info", 5200);
+      });
+    });
 
-    function bearingDeg(lat1, lon1, lat2, lon2){
-      const toRad = (x) => x * Math.PI / 180;
-      const toDeg = (x) => x * 180 / Math.PI;
-      const φ1 = toRad(lat1), φ2 = toRad(lat2);
-      const Δλ = toRad(lon2 - lon1);
-      const y = Math.sin(Δλ) * Math.cos(φ2);
-      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
-      const θ = Math.atan2(y, x);
-      return (toDeg(θ) + 360) % 360;
-    }
+    chipsEl.querySelector("[data-custom-add]")?.addEventListener("click", ()=>{
+      const name = prompt("Name this place (e.g., Gym, Grandma, Favorite cafe):");
+      if (!name) return;
 
-    function estimateDurationSeconds(distanceM, mode){
-      const walkingMps = 4.8 * 1000 / 3600;
-      const drivingMps = 25  * 1000 / 3600;
-      const mps = (mode === "driving") ? drivingMps : walkingMps;
-      return distanceM / mps;
-    }
-
-    // =========================
-    // Offline hint + app-shell caching via Service Worker
-    // =========================
-    function updateOfflineHint(){
-      if (navigator.onLine){
-        offlineHint.textContent = "";
-      } else {
-        offlineHint.textContent = "Offline: showing saved places & last results only. New searches/routes need internet.";
+      if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+        addCustomPlace(name, nav.dest.lat, nav.dest.lon);
+        toast("Saved", `"${name}" saved from selected destination.`, "ok");
+        return;
       }
-    }
-    window.addEventListener("online", updateOfflineHint);
-    window.addEventListener("offline", updateOfflineHint);
 
-    // Register service worker (creates a very basic offline shell)
-    // Note: we create SW dynamically, so you don't need another file.
-    async function registerSW(){
-      if (!("serviceWorker" in navigator)) return;
-      try{
-        const swCode = `
-          const CACHE = "cpya-athens-v12";
-          self.addEventListener("install", (e) => {
-            e.waitUntil((async()=>{
-              const c = await caches.open(CACHE);
-              // cache the app shell (this HTML only - served as /)
-              // It will be cached on first visit.
-              await self.skipWaiting();
-            })());
-          });
-          self.addEventListener("activate", (e) => {
-            e.waitUntil(self.clients.claim());
-          });
-          self.addEventListener("fetch", (e) => {
-            const req = e.request;
-            // Only GET
-            if (req.method !== "GET") return;
-            e.respondWith((async()=>{
-              const cache = await caches.open(CACHE);
-              const cached = await cache.match(req);
-              if (cached) return cached;
+      armSave = { type:"custom", name };
+      toast("Add place", `Tap on the map to place: "${name}"`, "info", 5200);
+    });
+  }
 
-              try{
-                const res = await fetch(req);
-                // Cache same-origin assets (our app responses)
-                const url = new URL(req.url);
-                if (url.origin === location.origin){
-                  cache.put(req, res.clone());
-                }
-                return res;
-              } catch(err){
-                // If offline and no cache:
-                // try return cached "/" as fallback for navigation
-                const url = new URL(req.url);
-                if (url.origin === location.origin){
-                  const fallback = await cache.match(location.origin + "/");
-                  if (fallback) return fallback;
-                }
-                throw err;
-              }
-            })());
-          });
-        `;
-        const blob = new Blob([swCode], { type: "text/javascript" });
-        const swUrl = URL.createObjectURL(blob);
-        await navigator.serviceWorker.register(swUrl);
-      } catch {}
-    }
+  // Voice
+  let cachedVoices = [];
+  function refreshVoices(){
+    cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
+  }
+  if ("speechSynthesis" in window){
+    refreshVoices();
+    speechSynthesis.onvoiceschanged = refreshVoices;
+  }
+  function pickVoicePreferFemale(){
+    if (!cachedVoices.length) refreshVoices();
+    const greek = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
+    const femaleHints = ["female","woman","maria","eleni","anna","zira","siri","karen","google","helena"];
+    const pickFrom = (arr) => {
+      for (const hint of femaleHints){
+        const found = arr.find(v => (v.name || "").toLowerCase().includes(hint));
+        if (found) return found;
+      }
+      return arr[0] || null;
+    };
+    return pickFrom(greek) || pickFrom(cachedVoices) || null;
+  }
+  function speak(text){
+    try{
+      if (nav.voiceStyle === "off") return;
+      if (!("speechSynthesis" in window)) return;
+      const voice = pickVoicePreferFemale();
+      const u = new SpeechSynthesisUtterance(String(text));
+      if (voice){
+        u.voice = voice;
+        u.lang = voice.lang || "en-US";
+      }
+      u.rate = 1.02;
+      u.pitch = 1.12;
+      u.volume = 0.95;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }
+  function updateVoiceBtn(){
+    navVoice.textContent = nav.voiceStyle === "off" ? "🔈 Voice: Off" : "🔈 Voice: Soft";
+  }
 
-    // =========================
-    // Saved places storage + map icons
-    // =========================
-    function loadJson(key, fallback){
-      try{ const v = JSON.parse(localStorage.getItem(key) || ""); return v ?? fallback; } catch { return fallback; }
-    }
-    function saveJson(key, value){
-      localStorage.setItem(key, JSON.stringify(value));
-    }
+  // Weather
+  function weatherIcon(code) {
+    code = Number(code);
+    if (code === 0) return "☀️";
+    if (code <= 2) return "⛅";
+    if (code === 3) return "☁️";
+    if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
+    if (code === 45 || code === 48) return "🌫️";
+    if (code >= 95) return "⛈️";
+    return "🌦️";
+  }
 
-    function loadSaved(){
-      const o = loadJson(SAVED_KEY, {});
-      return (o && typeof o === "object") ? o : {};
-    }
-    function saveSaved(o){
-      saveJson(SAVED_KEY, o);
-      renderChips();
-      renderSavedMarkers();
-    }
+  async function updateWeather(lat, lon){
+    weatherCard.style.display = "block";
+    weatherCard.innerHTML = `
+      <div style="font-weight:900">Weather</div>
+      <div class="line">Loading…</div>
+    `;
+    try{
+      const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+      const d = await r.json();
+      if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
+      const c = d.data.current;
+      const icon = weatherIcon(c.weather_code);
 
-    function setSavedPlace(key, lat, lon){
-      const saved = loadSaved();
-      saved[key] = { lat, lon, updatedAt: Date.now() };
-      saveSaved(saved);
-    }
-    function clearSavedPlace(key){
-      const saved = loadSaved();
-      delete saved[key];
-      saveSaved(saved);
-    }
-
-    function renderSavedMarkers(){
-      savedLayer.clearLayers();
-      const saved = loadSaved();
-
-      SAVED_SLOTS.forEach(slot=>{
-        const p = saved[slot.key];
-        if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return;
-
-        const icon = L.divIcon({
-          className: "",
-          html: `<div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(17,19,24,.92);box-shadow:${getComputedStyle(document.documentElement).getPropertyValue('--shadow')};font-size:18px">${slot.icon}</div>`,
-          iconSize: [34,34],
-          iconAnchor: [17,17]
-        });
-
-        const m = L.marker([p.lat, p.lon], { icon }).addTo(savedLayer);
-        m.bindTooltip(`${slot.icon} ${slot.label}`, { direction:"top", offset:[0,-10], opacity:0.95 });
-
-        m.on("click", ()=>{
-          setDestination({ lat:p.lat, lon:p.lon, name: slot.label, address:"" });
-        });
-      });
-    }
-
-    // =========================
-    // Recents
-    // =========================
-    function loadRecent(){
-      const arr = loadJson(RECENT_KEY, []);
-      return Array.isArray(arr) ? arr : [];
-    }
-    function saveRecent(q){
-      const cur = loadRecent().filter(x => String(x).toLowerCase() !== String(q).toLowerCase());
-      cur.unshift(q);
-      saveJson(RECENT_KEY, cur.slice(0, 8));
-      renderChips();
-    }
-
-    function renderChips(){
-      const rec = loadRecent();
-      const saved = loadSaved();
-
-      const parts = [];
-      SAVED_SLOTS.forEach(slot=>{
-        const has = !!saved[slot.key];
-        parts.push(`<span class="pill" data-saved="${slot.key}">${slot.icon} ${has ? slot.label : ("Set " + slot.label)}</span>`);
-      });
-      parts.push(`<span class="pill" data-more="1">More ▾</span>`);
-
-      rec.slice(0,6).forEach((s,i) => parts.push(`<span class="pill" data-recent="${i}">${escapeHtml(s)}</span>`));
-      chipsEl.innerHTML = parts.join("");
-
-      chipsEl.querySelectorAll("[data-recent]").forEach(el=>{
-        el.addEventListener("click", ()=>{
-          const idx = Number(el.getAttribute("data-recent"));
-          const q = rec[idx];
-          qEl.value = q;
-          doSearch(q);
-        });
-      });
-
-      chipsEl.querySelectorAll("[data-saved]").forEach(el=>{
-        el.addEventListener("click", ()=>{
-          const key = el.getAttribute("data-saved");
-          const saved = loadSaved();
-          const p = saved[key];
-
-          if (p){
-            // go
-            setDestination({ lat:p.lat, lon:p.lon, name:key, address:"" });
-            return;
-          }
-
-          // arm map click (or use selected destination immediately)
-          armSaveKey = key;
-          if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
-            setSavedPlace(key, nav.dest.lat, nav.dest.lon);
-            toast("Saved", `${key} saved from selected destination.`, "ok");
-            armSaveKey = null;
-            return;
-          }
-          toast("Set place", `Tap the map to set ${key}.`, "info", 5200);
-        });
-      });
-
-      chipsEl.querySelector("[data-more]")?.addEventListener("click", ()=>{
-        const msg =
-          `To change a saved place:\n`+
-          `1) Tap its pill (Home/School/Work/Custom)\n`+
-          `2) Tap the map where you want it.\n\n`+
-          `To clear: open DevTools → Application → LocalStorage.\n`+
-          `We can add a real “Clear” menu next.`;
-        toast("Saved places", msg, "info", 7000);
-      });
-    }
-
-    // =========================
-    // Voice (less creepy + prefer female-ish)
-    // =========================
-    let cachedVoices = [];
-    function refreshVoices(){
-      cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
-    }
-    if ("speechSynthesis" in window){
-      refreshVoices();
-      speechSynthesis.onvoiceschanged = refreshVoices;
-    }
-
-    function pickVoicePreferFemale(){
-      if (!cachedVoices.length) refreshVoices();
-
-      // Greek voices first
-      const greek = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
-
-      // Heuristics: names that often correspond to female voices
-      const femaleHints = ["female", "woman", "maria", "eleni", "anna", "zira", "siri", "karen", "google", "helena"];
-      const pickFrom = (arr) => {
-        for (const hint of femaleHints){
-          const found = arr.find(v => (v.name || "").toLowerCase().includes(hint));
-          if (found) return found;
-        }
-        // otherwise pick default
-        return arr[0] || null;
-      };
-
-      const greekPick = pickFrom(greek);
-      if (greekPick) return greekPick;
-
-      // fallback english
-      const english = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("en"));
-      return pickFrom(english) || cachedVoices[0] || null;
-    }
-
-    function speak(text){
-      try{
-        const style = voiceStyleSel.value;
-        if (style === "off") return;
-        if (!("speechSynthesis" in window)) return;
-
-        const voice = pickVoicePreferFemale();
-        const u = new SpeechSynthesisUtterance(String(text));
-
-        if (voice){
-          u.voice = voice;
-          u.lang = voice.lang || "en-US";
-        }
-
-        // soften it
-        if (style === "soft"){
-          u.rate = 1.02;
-          u.pitch = 1.15;
-          u.volume = 0.95;
-        } else {
-          u.rate = 1.05;
-          u.pitch = 1.05;
-          u.volume = 1.0;
-        }
-
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(u);
-      } catch {}
-    }
-
-    // =========================
-    // Weather (same as before)
-    // =========================
-    function weatherIcon(code) {
-      code = Number(code);
-      if (code === 0) return "☀️";
-      if (code <= 2) return "⛅";
-      if (code === 3) return "☁️";
-      if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
-      if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
-      if (code === 45 || code === 48) return "🌫️";
-      if (code >= 95) return "⛈️";
-      return "🌦️";
-    }
-
-    async function updateWeather(lat, lon){
-      weatherCard.style.display = "block";
+      weatherCard.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="font-weight:900">Weather</div>
+          <div style="opacity:.9">${icon}</div>
+        </div>
+        <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
+        <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
+        <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
+      `;
+    } catch {
       weatherCard.innerHTML = `
         <div style="font-weight:900">Weather</div>
-        <div class="line">Loading…</div>
+        <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
       `;
-      try{
-        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
-        const d = await r.json();
-        if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
-        const c = d.data.current;
-        const icon = weatherIcon(c.weather_code);
-
-        weatherCard.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="font-weight:900">Weather</div>
-            <div style="opacity:.9">${icon}</div>
-          </div>
-          <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
-          <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
-          <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
-        `;
-      } catch {
-        weatherCard.innerHTML = `
-          <div style="font-weight:900">Weather</div>
-          <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
-        `;
-      }
     }
+  }
 
-    // =========================
-    // Routing + maneuver icons
-    // =========================
-    function maneuverIcon(step){
-      const m = step.maneuver || {};
-      const type = (m.type || "").toLowerCase();
-      const mod = (m.modifier || "").toLowerCase();
+  // Routing + nav steps
+  function maneuverIcon(step){
+    const m = step.maneuver || {};
+    const type = (m.type || "").toLowerCase();
+    const mod = (m.modifier || "").toLowerCase();
+    if (type === "arrive") return "🏁";
+    if (type === "depart") return "🚩";
+    if (type === "roundabout") return "🔄";
+    if (type === "uturn") return "↩️";
+    if (mod.includes("left")) return "⬅️";
+    if (mod.includes("right")) return "➡️";
+    if (mod.includes("straight")) return "⬆️";
+    if (type === "merge") return "⤴️";
+    if (type === "fork") return "🍴";
+    if (type === "continue") return "⬆️";
+    return "➡️";
+  }
 
-      // modifier icons
-      if (type === "arrive") return "🏁";
-      if (type === "depart") return "🚩";
-      if (type === "roundabout") return "🔄";
-      if (type === "uturn") return "↩️";
-      if (mod.includes("left")) return "⬅️";
-      if (mod.includes("right")) return "➡️";
-      if (mod.includes("straight")) return "⬆️";
-      if (type === "merge") return "⤴️";
-      if (type === "fork") return "🍴";
-      if (type === "continue") return "⬆️";
-      return "➡️";
+  function buildInstruction(step){
+    const m = step.maneuver || {};
+    const type = (m.type || "").toLowerCase();
+    const mod  = (m.modifier || "").toLowerCase();
+    const name = step.name ? ` onto ${step.name}` : "";
+
+    if (type === "depart") return `Start${name}`;
+    if (type === "arrive") return `Arrive at destination`;
+    if (type === "roundabout") return `At roundabout, take exit${name}`;
+    if (type === "merge") return `Merge${name}`;
+    if (type === "uturn") return `Make a U-turn${name}`;
+
+    if (type === "turn") {
+      if (mod) return `Turn ${mod}${name}`;
+      return `Turn${name}`;
     }
-
-    function buildInstruction(step){
-      const m = step.maneuver || {};
-      const type = (m.type || "").toLowerCase();
-      const mod  = (m.modifier || "").toLowerCase();
-      const name = step.name ? ` onto ${step.name}` : "";
-
-      if (type === "depart") return `Start${name}`;
-      if (type === "arrive") return `Arrive at destination`;
-      if (type === "roundabout") return `At roundabout, take exit${name}`;
-      if (type === "merge") return `Merge${name}`;
-      if (type === "on ramp") return `Take the ramp${name}`;
-      if (type === "off ramp") return `Exit the ramp${name}`;
-      if (type === "uturn") return `Make a U-turn${name}`;
-
-      if (type === "turn"){
-        if (mod) return `Turn ${mod}${name}`;
-        return `Turn${name}`;
-      }
-
-      if (type === "continue" || type === "new name" || type === "straight"){
-        return `Continue${name}`;
-      }
-
-      if (type === "fork"){
-        if (mod) return `Keep ${mod}${name}`;
-        return `Keep${name}`;
-      }
-
-      return step.name ? `Go on ${step.name}` : "Continue";
+    if (type === "continue" || type === "new name" || type === "straight") {
+      return `Continue${name}`;
     }
-
-    async function startRoute(){
-      if (!myLocation || !nav.dest) return;
-
-      nav.mode = modeSel.value || "walking";
-      setStatus("Calculating route…");
-      navCard.style.display = "block";
-      navInstr.textContent = "Calculating route…";
-      navSub.textContent = "—";
-
-      try{
-        const url =
-          `https://router.project-osrm.org/route/v1/${nav.mode}/` +
-          `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
-          `?overview=full&geometries=geojson&steps=true`;
-
-        const r = await fetch(url);
-        const j = await r.json();
-        const route = j.routes?.[0];
-        if (!route) throw new Error("no route");
-
-        const coords = route.geometry?.coordinates || [];
-        const latlngs = coords.map(c => [c[1], c[0]]);
-        if (routeLine) routeLine.remove();
-        routeLine = L.polyline(latlngs).addTo(map);
-
-        const leg = route.legs?.[0];
-        const steps = Array.isArray(leg?.steps) ? leg.steps : [];
-        nav.steps = steps.map(s => ({
-          distance: s.distance,
-          duration: s.duration,
-          name: s.name || "",
-          maneuver: s.maneuver || {},
-          instruction: buildInstruction(s)
-        }));
-
-        nav.stepIndex = 0;
-        nav.distanceM = route.distance;
-        nav.durationS = estimateDurationSeconds(nav.distanceM, nav.mode);
-
-        setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
-        showNavStep();
-        cacheUiState();
-      } catch {
-        setStatus("Route failed.");
-        toast("Route error", "Could not calculate route. Try again.", "bad");
-        nav.steps = [];
-        navCard.style.display = "none";
-      }
+    if (type === "fork") {
+      if (mod) return `Keep ${mod}${name}`;
+      return `Keep${name}`;
     }
+    return step.name ? `Go on ${step.name}` : "Continue";
+  }
 
-    function showNavStep(){
-      if (!nav.steps.length) return;
+  async function startRoute(){
+    if (!myLocation || !nav.dest) return;
 
-      const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
-      nav.stepIndex = i;
+    nav.mode = modeSel.value || "walking";
+    setStatus("Calculating route…");
+    navCard.style.display = "block";
+    navInstr.textContent = "Calculating route…";
+    navSub.textContent = "—";
 
-      const s = nav.steps[i];
-      const icon = maneuverIcon(s);
-      navInstr.textContent = `${icon} ${s.instruction}`;
+    try{
+      const url =
+        `https://router.project-osrm.org/route/v1/${nav.mode}/` +
+        `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
+        `?overview=full&geometries=geojson&steps=true`;
 
-      navSub.textContent =
-        `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
+      const r = await fetch(url);
+      const j = await r.json();
+      const route = j.routes?.[0];
+      if (!route) throw new Error("no route");
 
-      navPrev.disabled = (i === 0);
-      navNext.disabled = (i === nav.steps.length - 1);
+      const coords = route.geometry?.coordinates || [];
+      const latlngs = coords.map(c => [c[1], c[0]]);
+      if (routeLine) routeLine.remove();
+      routeLine = L.polyline(latlngs).addTo(map);
 
-      if (voiceStyleSel.value !== "off") speak(`${s.instruction}`);
+      const leg = route.legs?.[0];
+      const steps = Array.isArray(leg?.steps) ? leg.steps : [];
+      nav.steps = steps.map(s => ({
+        distance: s.distance,
+        duration: s.duration,
+        name: s.name || "",
+        maneuver: s.maneuver || {},
+        instruction: buildInstruction(s)
+      }));
 
-      // follow maneuver point if follow mode ON
-      if (followOn){
-        const loc = s.maneuver?.location;
-        if (Array.isArray(loc) && loc.length === 2){
-          map.panTo([loc[1], loc[0]], { animate:true });
-        }
-      }
-    }
-
-    function stopNav(){
-      nav.steps = [];
       nav.stepIndex = 0;
-      nav.distanceM = null;
-      nav.durationS = null;
+      nav.distanceM = route.distance;
+      nav.durationS = estimateDurationSeconds(nav.distanceM, nav.mode);
+
+      setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
+      showNavStep();
+      cacheUiState();
+    } catch {
+      setStatus("Route failed.");
+      toast("Route error", "Could not calculate route. Try again.", "bad");
+      nav.steps = [];
       navCard.style.display = "none";
     }
+  }
 
-    // =========================
-    // Destination + markers (with tooltip so pins are not silent)
-    // =========================
-    function setDestination(x){
-      if (!x) return;
+  function showNavStep(){
+    if (!nav.steps.length) return;
 
-      let dest = { ...x };
-      if (!inAthens(dest.lat, dest.lon)){
-        const c = clampToAthens(dest.lat, dest.lon);
-        dest.lat = c.lat; dest.lon = c.lon;
-        toast("Outside Athens", "Clamped inside Athens bounds.", "info");
-      }
+    const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
+    nav.stepIndex = i;
 
-      nav.dest = dest;
+    const s = nav.steps[i];
+    const icon = maneuverIcon(s);
+    navInstr.textContent = `${icon} ${s.instruction}`;
 
-      if (destMarker) destMarker.remove();
-      destMarker = L.marker([dest.lat, dest.lon]).addTo(map);
-      destMarker.bindTooltip(dest.name || "Destination", { direction:"top", offset:[0,-10], opacity:0.95 });
-      destMarker.bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
+    navSub.textContent =
+      `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
 
-      map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
-      updateWeather(dest.lat, dest.lon);
+    navPrev.disabled = (i === 0);
+    navNext.disabled = (i === nav.steps.length - 1);
 
-      if (myLocation) startRoute();
+    if (nav.voiceStyle !== "off") speak(s.instruction);
 
-      cacheUiState();
-    }
-
-    // =========================
-    // Results rendering (NAME only; address optional)
-    // =========================
-    function normalizeAddress(name, address){
-      if (!address) return "";
-      const n = String(name||"").trim().toLowerCase();
-      const a = String(address||"").trim();
-
-      // if address basically repeats name at start, drop it
-      if (a.trim().toLowerCase().startsWith(n) && n.length > 3) return "";
-      // trim huge strings
-      if (a.length > 80) return a.slice(0, 80) + "…";
-      return a;
-    }
-
-    function renderResults(){
-      if (!results.length){
-        resultsWrap.style.display = "none";
-        clearBtn.style.display = "none";
-        return;
-      }
-
-      resultsWrap.style.display = "block";
-      clearBtn.style.display = "inline-flex";
-      resultsMeta.textContent = `${results.length} found`;
-
-      resultsList.innerHTML = results.map((x,i)=>{
-        const addr = normalizeAddress(x.name, x.address);
-        return `
-          <div class="res ${i===selectedIndex ? "selected":""}" data-idx="${i}">
-            <div class="resTitle">${escapeHtml(x.name || "Place")}</div>
-            ${addr ? `<div class="resMeta">${escapeHtml(addr)}</div>` : ``}
-          </div>
-        `;
-      }).join("");
-
-      resultsList.querySelectorAll("[data-idx]").forEach(el=>{
-        el.addEventListener("click", ()=>{
-          const i = Number(el.getAttribute("data-idx"));
-          pickResult(i);
-        });
-      });
-    }
-
-    function renderMarkers(){
-      markersLayer.clearLayers();
-      const bounds = [];
-
-      // cap marker count for performance
-      const MAX_MARKERS = 120;
-      const list = results.slice(0, MAX_MARKERS);
-
-      list.forEach((x,i)=>{
-        bounds.push([x.lat, x.lon]);
-
-        const m = L.marker([x.lat, x.lon]).addTo(markersLayer);
-        m.bindTooltip(x.name || "Place", { direction:"top", offset:[0,-10], opacity:0.95 });
-
-        m.on("click", ()=> pickResult(i));
-      });
-
-      if (bounds.length){
-        map.fitBounds(bounds, { padding:[30,30] });
-      }
-
-      if (results.length > MAX_MARKERS){
-        toast("Many results", `Showing first ${MAX_MARKERS} markers for performance.`, "info", 4500);
+    if (followOn){
+      const loc = s.maneuver?.location;
+      if (Array.isArray(loc) && loc.length === 2){
+        map.panTo([loc[1], loc[0]], { animate:true });
       }
     }
+  }
 
-    function pickResult(i){
-      const x = results[i];
-      if (!x) return;
-      selectedIndex = i;
-      renderResults();
-      setDestination(x);
+  function stopNav(){
+    nav.steps = [];
+    nav.stepIndex = 0;
+    nav.distanceM = null;
+    nav.durationS = null;
+    navCard.style.display = "none";
+  }
+
+  // Destination marker
+  function setDestination(x){
+    if (!x) return;
+
+    let dest = { ...x };
+    if (!inAthens(dest.lat, dest.lon)){
+      const c = clampToAthens(dest.lat, dest.lon);
+      dest.lat = c.lat; dest.lon = c.lon;
+      toast("Outside Athens", "Clamped inside Athens bounds.", "info");
     }
 
-    // =========================
-    // Suggestions (debounced)
-    // =========================
-    let suggestTimer = null;
+    nav.dest = dest;
 
-    async function fetchSuggestions(q){
-      if (!q || q.length < 2) { suggestBox.style.display="none"; return; }
-      try{
-        const r = await fetch("/where", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ q })
-        });
-        const d = await r.json();
-        const list = Array.isArray(d?.results) ? d.results.slice(0,6) : [];
-        const inBox = list
-          .map(x => ({ name:x.name, address:x.address, lat:Number(x.lat), lon:Number(x.lon) }))
-          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
-          .filter(x => inAthens(x.lat, x.lon))
-          .slice(0,6);
+    if (destMarker) destMarker.remove();
+    destMarker = L.marker([dest.lat, dest.lon]).addTo(map);
+    destMarker.bindTooltip(dest.name || "Destination", { direction:"top", offset:[0,-10], opacity:0.95 });
+    destMarker.bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
 
-        if (!inBox.length) { suggestBox.style.display="none"; return; }
+    map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
+    updateWeather(dest.lat, dest.lon);
 
-        suggestBox.innerHTML = inBox.map((x,i)=>`
-          <div class="item" data-sug="${i}">
-            <div><b>${escapeHtml(x.name || "Place")}</b></div>
-            <div class="sub">${escapeHtml(normalizeAddress(x.name, x.address) || "")}</div>
-          </div>
-        `).join("");
-        suggestBox.style.display="block";
+    if (myLocation) startRoute();
+    cacheUiState();
+  }
 
-        suggestBox.querySelectorAll("[data-sug]").forEach(el=>{
-          el.addEventListener("click", ()=>{
-            const idx = Number(el.getAttribute("data-sug"));
-            const pick = inBox[idx];
-            suggestBox.style.display="none";
-            qEl.value = pick.name || q;
-            setDestination(pick);
-          });
-        });
-      } catch {
-        suggestBox.style.display="none";
-      }
-    }
-
-    function scheduleSuggest(){
-      clearTimeout(suggestTimer);
-      const q = qEl.value.trim();
-      suggestTimer = setTimeout(()=>fetchSuggestions(q), 220);
-    }
-
-    function hideSuggest(){ suggestBox.style.display="none"; }
-
-    // =========================
-    // Search + Nearby
-    // =========================
-    function showSearchSkeleton(){
-      resultsWrap.style.display = "block";
-      clearBtn.style.display = "inline-flex";
-      resultsMeta.textContent = "Searching…";
-      resultsList.innerHTML = `<div class="res"><div class="resTitle">Searching…</div><div class="resMeta">Please wait</div></div>`;
-    }
-
-    async function doSearch(qOverride=null){
-      const q = (qOverride ?? qEl.value).trim();
-      if (!q) return;
-
-      hideSuggest();
-      saveRecent(q);
-
-      setLoading(true, "Searching…");
-      setStatus("Searching…");
-      showSearchSkeleton();
-
-      try{
-        const r = await fetch("/where", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ q })
-        });
-        const d = await r.json();
-
-        const list = Array.isArray(d?.results) ? d.results : [];
-        const filtered = list
-          .map(x => ({
-            name: x.name,
-            address: x.address,
-            lat: Number(x.lat),
-            lon: Number(x.lon),
-          }))
-          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
-          .filter(x => inAthens(x.lat, x.lon));
-
-        results = filtered;
-        selectedIndex = results.length ? 0 : -1;
-
-        // save last results for offline view
-        saveJson(LAST_RESULTS_KEY, results.slice(0,200));
-
-        if (!results.length){
-          setStatus("No results.");
-          toast("No results", "Try a different search.", "info");
-          resultsWrap.style.display = "none";
-          clearBtn.style.display = "none";
-          markersLayer.clearLayers();
-          setLoading(false);
-          return;
-        }
-
-        setStatus(`Found ${results.length} results.`);
-        renderMarkers();
-        renderResults();
-        pickResult(0);
-      } catch {
-        setStatus("Network error.");
-        toast("Network error", "Could not reach the server. Try again.", "bad");
-      } finally {
-        setLoading(false);
-      }
-
-      cacheUiState();
-    }
-
-    async function nearMe(){
-      if (!myLocation){
-        toast("Need location", "Enable Live tracking first.", "bad");
-        return;
-      }
-
-      hideSuggest();
-      setLoading(true, "Searching near you…");
-      setStatus("Searching near you…");
-      showSearchSkeleton();
-
-      try{
-        const cat = nearSel.value;
-        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
-        const d = await r.json();
-
-        const list = Array.isArray(d?.results) ? d.results : [];
-
-        // allow a lot, but keep a cap for marker render
-        const filtered = list
-          .map(x => ({ name:x.name, address:x.address, lat:Number(x.lat), lon:Number(x.lon) }))
-          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
-          .filter(x => inAthens(x.lat, x.lon));
-
-        results = filtered;
-        selectedIndex = results.length ? 0 : -1;
-
-        saveJson(LAST_RESULTS_KEY, results.slice(0,200));
-
-        if (!results.length){
-          setStatus("Nothing found near you.");
-          toast("No nearby results", "Try a different category.", "info");
-          resultsWrap.style.display = "none";
-          clearBtn.style.display = "none";
-          markersLayer.clearLayers();
-          setLoading(false);
-          return;
-        }
-
-        setStatus(`Found ${results.length} nearby.`);
-        renderMarkers();
-        renderResults();
-        pickResult(0);
-      } catch {
-        setStatus("Network error.");
-        toast("Network error", "Could not fetch nearby places.", "bad");
-      } finally {
-        setLoading(false);
-      }
-
-      cacheUiState();
-    }
-
-    // =========================
-    // Live tracking (watchPosition) + arrow marker
-    // =========================
-    function arrowIcon(deg){
-      return L.divIcon({
-        className:"",
-        html: `
-          <div style="
-            width:34px;height:34px;border-radius:999px;
-            border:1px solid rgba(255,255,255,.18);
-            background:rgba(17,19,24,.92);
-            display:flex;align-items:center;justify-content:center;
-            box-shadow:${getComputedStyle(document.documentElement).getPropertyValue('--shadow')};
-          ">
-            <div style="transform: rotate(${deg}deg); font-size:18px;">➤</div>
-          </div>
-        `,
-        iconSize:[34,34],
-        iconAnchor:[17,17]
-      });
-    }
-
-    function setMyMarkers(lat, lon, bearing){
-      if (!myDot){
-        myDot = L.circleMarker([lat, lon], { radius: 7, renderer: canvasRenderer }).addTo(map);
-        myDot.bindTooltip("You", { direction:"top", offset:[0,-10], opacity:0.95 });
-      } else {
-        myDot.setLatLng([lat, lon]);
-      }
-
-      const b = Number.isFinite(bearing) ? bearing : 0;
-
-      if (!myArrow){
-        myArrow = L.marker([lat, lon], { icon: arrowIcon(b) }).addTo(map);
-      } else {
-        myArrow.setLatLng([lat, lon]);
-        myArrow.setIcon(arrowIcon(b));
-      }
-    }
-
-    function startTracking(){
-      if (!navigator.geolocation){
-        toast("Unsupported", "Your browser does not support location.", "bad");
-        return;
-      }
-      if (trackingOn) return;
-
-      trackingOn = true;
-      locBtn.textContent = "Live tracking: On";
-      toast("Tracking", "Live tracking enabled.", "ok");
-
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const rawLat = pos.coords.latitude;
-          const rawLon = pos.coords.longitude;
-
-          const outside = !inAthens(rawLat, rawLon);
-          const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
-
-          const now = Date.now();
-          let bearing = myLocation?.bearingDeg ?? 0;
-
-          if (myLocation && Number.isFinite(myLocation.lat) && Number.isFinite(myLocation.lon)){
-            const moved = haversineMeters(myLocation.lat, myLocation.lon, use.lat, use.lon);
-            if (moved > 3){ // update bearing only if moved
-              bearing = bearingDeg(myLocation.lat, myLocation.lon, use.lat, use.lon);
-            }
-          }
-
-          myLocation = { lat: use.lat, lon: use.lon, bearingDeg: bearing, lastUpdate: now };
-          setMyMarkers(use.lat, use.lon, bearing);
-
-          if (outside){
-            // don’t spam toast every update; only once
-          }
-
-          if (followOn){
-            map.panTo([use.lat, use.lon], { animate:true });
-          }
-
-          // If navigating, reroute occasionally if moved far
-          if (nav.dest){
-            const distToDest = haversineMeters(use.lat, use.lon, nav.dest.lat, nav.dest.lon);
-            // simple reroute heuristic
-            if (!myLocation._lastRerouteAt) myLocation._lastRerouteAt = 0;
-            if (Date.now() - myLocation._lastRerouteAt > 12000){
-              myLocation._lastRerouteAt = Date.now();
-              startRoute();
-            }
-          }
-        },
-        (err) => {
-          toast("Location error", err?.message || "Could not get location.", "bad", 5200);
-          stopTracking();
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-      );
-    }
-
-    function stopTracking(){
-      trackingOn = false;
-      locBtn.textContent = "Live tracking: Off";
-      if (watchId != null){
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-      }
-      toast("Tracking", "Live tracking disabled.", "info");
-    }
-
-    // =========================
-    // Map click behavior:
-    // - if armSaveKey => save
-    // - else => set destination
-    // =========================
-    map.on("click", (e) => {
-      const { lat, lng } = e.latlng;
-
-      if (armSaveKey){
-        setSavedPlace(armSaveKey, lat, lng);
-        toast("Saved", `${armSaveKey} saved from map click.`, "ok");
-        armSaveKey = null;
-        return;
-      }
-
-      setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
-      toast("Pinned", "Destination pinned. Calculating route…", "info");
-    });
-
-    // =========================
-    // Clear
-    // =========================
-    function clearAll(){
-      results = [];
-      selectedIndex = -1;
-      markersLayer.clearLayers();
-      if (routeLine) { routeLine.remove(); routeLine = null; }
-      if (destMarker) { destMarker.remove(); destMarker = null; }
-      nav.dest = null;
-      stopNav();
+  // Results rendering
+  function renderResults(){
+    if (!results.length){
       resultsWrap.style.display = "none";
       clearBtn.style.display = "none";
-      resultsList.innerHTML = "";
-      resultsMeta.textContent = "—";
-      setStatus("Ready");
-      cacheUiState();
+      return;
     }
 
-    // =========================
-    // Panel collapse
-    // =========================
-    function setCollapsed(state){
-      collapsed = !!state;
-      panelBody.style.display = collapsed ? "none" : "block";
-      togglePanelBtn.textContent = collapsed ? "▸" : "▾";
-      setTimeout(()=>map.invalidateSize(), 50);
+    resultsWrap.style.display = "block";
+    clearBtn.style.display = "inline-flex";
+    resultsMeta.textContent = `${results.length} found`;
+
+    resultsList.innerHTML = results.map((x,i)=>{
+      const addr = normalizeAddress(x.name, x.address);
+      return `
+        <div class="res ${i===selectedIndex ? "selected":""}" data-idx="${i}">
+          <div class="resTitle">${escapeHtml(x.name || "Place")}</div>
+          ${addr ? `<div class="resMeta">${escapeHtml(addr)}</div>` : ``}
+        </div>
+      `;
+    }).join("");
+
+    resultsList.querySelectorAll("[data-idx]").forEach(el => {
+      el.addEventListener("click", ()=>{
+        const i = Number(el.getAttribute("data-idx"));
+        pickResult(i);
+      });
+    });
+  }
+
+  function renderMarkers(){
+    markersLayer.clearLayers();
+    const bounds = [];
+
+    const MAX_MARKERS = 140;
+    const list = results.slice(0, MAX_MARKERS);
+
+    list.forEach((x,i)=>{
+      bounds.push([x.lat, x.lon]);
+      const m = L.marker([x.lat, x.lon]).addTo(markersLayer);
+      m.bindTooltip(x.name || "Place", { direction:"top", offset:[0,-10], opacity:0.95 });
+      m.on("click", ()=> pickResult(i));
+    });
+
+    if (bounds.length) map.fitBounds(bounds, { padding:[30,30] });
+
+    if (results.length > MAX_MARKERS){
+      toast("Many results", `Showing first ${MAX_MARKERS} markers for performance.`, "info", 4500);
+    }
+  }
+
+  function pickResult(i){
+    const x = results[i];
+    if (!x) return;
+    selectedIndex = i;
+    renderResults();
+    setDestination(x);
+  }
+
+  // Suggestions (debounced)
+  let suggestTimer = null;
+
+  async function fetchSuggestions(q){
+    if (!q || q.length < 2) { suggestBox.style.display="none"; return; }
+    try{
+      const r = await fetch("/where", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ q })
+      });
+      const d = await r.json();
+      const list = Array.isArray(d?.results) ? d.results.slice(0,6) : [];
+      const inBox = list
+        .map(x => ({ name:x.name, address:x.address, lat:Number(x.lat), lon:Number(x.lon) }))
+        .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+        .filter(x => inAthens(x.lat, x.lon))
+        .slice(0,6);
+
+      if (!inBox.length) { suggestBox.style.display="none"; return; }
+
+      suggestBox.innerHTML = inBox.map((x,i)=>`
+        <div class="item" data-sug="${i}">
+          <div><b>${escapeHtml(x.name || "Place")}</b></div>
+          <div class="sub">${escapeHtml(normalizeAddress(x.name, x.address) || "")}</div>
+        </div>
+      `).join("");
+      suggestBox.style.display="block";
+
+      suggestBox.querySelectorAll("[data-sug]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const idx = Number(el.getAttribute("data-sug"));
+          const pick = inBox[idx];
+          suggestBox.style.display="none";
+          qEl.value = pick.name || q;
+          setDestination(pick);
+        });
+      });
+    } catch {
+      suggestBox.style.display="none";
+    }
+  }
+
+  function scheduleSuggest(){
+    clearTimeout(suggestTimer);
+    const q = qEl.value.trim();
+    suggestTimer = setTimeout(()=>fetchSuggestions(q), 220);
+  }
+  function hideSuggest(){ suggestBox.style.display="none"; }
+
+  // Search + Nearby
+  async function doSearch(qOverride=null){
+    const q = (qOverride ?? qEl.value).trim();
+    if (!q) return;
+
+    hideSuggest();
+    saveRecent(q);
+
+    setLoading(true, "Searching…");
+    setStatus("Searching…");
+
+    try{
+      const r = await fetch("/where", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ q })
+      });
+      const d = await r.json();
+
+      const list = Array.isArray(d?.results) ? d.results : [];
+      const filtered = list
+        .map(x => ({
+          name: x.name,
+          address: x.address,
+          lat: Number(x.lat),
+          lon: Number(x.lon),
+        }))
+        .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+        .filter(x => inAthens(x.lat, x.lon));
+
+      results = filtered;
+      selectedIndex = results.length ? 0 : -1;
+
+      saveJson(LAST_RESULTS_KEY, results.slice(0,200));
+
+      if (!results.length){
+        setStatus("No results.");
+        toast("No results", "Try a different search.", "info");
+        resultsWrap.style.display = "none";
+        clearBtn.style.display = "none";
+        markersLayer.clearLayers();
+        setLoading(false);
+        return;
+      }
+
+      setStatus(`Found ${results.length} results.`);
+      renderMarkers();
+      renderResults();
+      pickResult(0);
+    } catch {
+      setStatus("Network error.");
+      toast("Network error", "Could not reach the server. Try again.", "bad");
+      const last = loadJson(LAST_RESULTS_KEY, []);
+      if (Array.isArray(last) && last.length){
+        results = last;
+        selectedIndex = 0;
+        renderMarkers();
+        renderResults();
+        toast("Offline fallback", "Showing your last saved results.", "info", 5200);
+      }
+    } finally {
+      setLoading(false);
     }
 
-    // =========================
-    // Cache UI + restore + offline last results
-    // =========================
-    function cacheUiState(){
-      try{
-        const state = {
-          q: qEl.value || "",
-          mode: modeSel.value || "walking",
-          voiceStyle: voiceStyleSel.value || "off",
-          lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
-          selectedIndex
-        };
-        saveJson(UI_KEY, state);
-      } catch {}
+    cacheUiState();
+  }
+
+  async function nearMe(){
+    if (!myLocation){
+      toast("Need location", "Tap My location (or allow location) first.", "bad");
+      return;
     }
 
-    function restoreUiState(){
-      const state = loadJson(UI_KEY, null);
-      if (state){
-        if (state.q) qEl.value = state.q;
-        if (state.mode) modeSel.value = state.mode;
-        if (state.voiceStyle) voiceStyleSel.value = state.voiceStyle;
-        if (state.lastDest && Number.isFinite(state.lastDest.lat) && Number.isFinite(state.lastDest.lon)){
-          nav.dest = { ...state.lastDest };
-          updateWeather(nav.dest.lat, nav.dest.lon);
+    hideSuggest();
+    setLoading(true, "Searching near you…");
+    setStatus("Searching near you…");
+
+    try{
+      const cat = nearSel.value;
+      const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
+      const d = await r.json();
+
+      const list = Array.isArray(d?.results) ? d.results : [];
+      const filtered = list
+        .map(x => ({ name:x.name, address:x.address, lat:Number(x.lat), lon:Number(x.lon) }))
+        .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+        .filter(x => inAthens(x.lat, x.lon));
+
+      results = filtered;
+      selectedIndex = results.length ? 0 : -1;
+
+      saveJson(LAST_RESULTS_KEY, results.slice(0,200));
+
+      if (!results.length){
+        setStatus("Nothing found near you.");
+        toast("No nearby results", "Try a different category.", "info");
+        resultsWrap.style.display = "none";
+        clearBtn.style.display = "none";
+        markersLayer.clearLayers();
+        setLoading(false);
+        return;
+      }
+
+      setStatus(`Found ${results.length} nearby.`);
+      renderMarkers();
+      renderResults();
+      pickResult(0);
+    } catch {
+      setStatus("Network error.");
+      toast("Network error", "Could not fetch nearby places.", "bad");
+    } finally {
+      setLoading(false);
+    }
+
+    cacheUiState();
+  }
+
+  // Live tracking + arrow
+  function arrowIcon(deg){
+    return L.divIcon({
+      className:"",
+      html: `
+        <div style="
+          width:34px;height:34px;border-radius:999px;
+          border:1px solid rgba(255,255,255,.18);
+          background:rgba(17,19,24,.92);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow: var(--shadow);
+        ">
+          <div style="transform: rotate(${deg}deg); font-size:18px;">➤</div>
+        </div>
+      `,
+      iconSize:[34,34],
+      iconAnchor:[17,17]
+    });
+  }
+
+  function setMyMarkers(lat, lon, bearing){
+    if (!myDot){
+      myDot = L.circleMarker([lat, lon], { radius: 7, renderer: canvasRenderer }).addTo(map);
+      myDot.bindTooltip("You", { direction:"top", offset:[0,-10], opacity:0.95 });
+    } else {
+      myDot.setLatLng([lat, lon]);
+    }
+
+    const b = Number.isFinite(bearing) ? bearing : 0;
+
+    if (!myArrow){
+      myArrow = L.marker([lat, lon], { icon: arrowIcon(b) }).addTo(map);
+    } else {
+      myArrow.setLatLng([lat, lon]);
+      myArrow.setIcon(arrowIcon(b));
+    }
+  }
+
+  function setTrackingBtn(){
+    trackBtn.textContent = trackingOn ? "Live tracking: On" : "Live tracking: Off";
+  }
+
+  function startTracking(){
+    if (!navigator.geolocation){
+      toast("Unsupported", "Your browser does not support location.", "bad");
+      return;
+    }
+    if (watchId != null) return;
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const rawLat = pos.coords.latitude;
+        const rawLon = pos.coords.longitude;
+
+        const outside = !inAthens(rawLat, rawLon);
+        const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
+
+        const now = Date.now();
+        let b = myLocation?.bearingDeg ?? 0;
+
+        if (myLocation && Number.isFinite(myLocation.lat) && Number.isFinite(myLocation.lon)){
+          const moved = haversineMeters(myLocation.lat, myLocation.lon, use.lat, use.lon);
+          if (moved > 3) b = bearingDeg(myLocation.lat, myLocation.lon, use.lat, use.lon);
         }
-      }
 
-      // If offline, show last results so app still "works"
-      if (!navigator.onLine){
-        const last = loadJson(LAST_RESULTS_KEY, []);
-        if (Array.isArray(last) && last.length){
-          results = last.slice(0,120);
-          selectedIndex = 0;
-          renderMarkers();
-          renderResults();
-          toast("Offline results", "Loaded last results from cache.", "info", 5000);
+        myLocation = myLocation || {};
+        myLocation.lat = use.lat;
+        myLocation.lon = use.lon;
+        myLocation.bearingDeg = b;
+        myLocation.lastUpdate = now;
+        myLocation.lastRerouteAt = myLocation.lastRerouteAt || 0;
+
+        setMyMarkers(use.lat, use.lon, b);
+
+        if (followOn) map.panTo([use.lat, use.lon], { animate:true });
+
+        if (nav.dest && (Date.now() - myLocation.lastRerouteAt) > 12000){
+          myLocation.lastRerouteAt = Date.now();
+          startRoute();
         }
+      },
+      (err) => {
+        toast("Location error", err?.message || "Could not get location.", "bad", 5200);
+        stopTracking();
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function stopTracking(){
+    if (watchId != null){
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  }
+
+  function applyTrackingDesiredState(){
+    setTrackingBtn();
+    if (trackingOn) startTracking();
+    else stopTracking();
+  }
+
+  // Some browsers require a user gesture for GPS
+  let trackingArmed = true;
+  function armTrackingOnce(){
+    if (!trackingArmed) return;
+    trackingArmed = false;
+    if (trackingOn) startTracking();
+    window.removeEventListener("pointerdown", armTrackingOnce, true);
+  }
+
+  // Map click
+  map.on("click", (e) => {
+    const { lat, lng } = e.latlng;
+
+    if (armSave){
+      if (armSave.type === "fixed"){
+        setFixedPlace(armSave.key, lat, lng);
+        toast("Saved", `${armSave.key} updated.`, "ok");
+      } else if (armSave.type === "custom"){
+        addCustomPlace(armSave.name, lat, lng);
+        toast("Saved", `"${armSave.name}" added.`, "ok");
       }
+      armSave = null;
+      return;
     }
 
-    // =========================
-    // Wiring buttons
-    // =========================
-    btn.addEventListener("click", ()=>doSearch());
-    qEl.addEventListener("keydown", (e)=>{
-      if (e.key === "Enter") doSearch();
-      else scheduleSuggest();
+    setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
+    toast("Pinned", "Destination pinned. Calculating route…", "info");
+  });
+
+  // Clear
+  function clearAll(){
+    results = [];
+    selectedIndex = -1;
+    markersLayer.clearLayers();
+    if (routeLine) { routeLine.remove(); routeLine = null; }
+    if (destMarker) { destMarker.remove(); destMarker = null; }
+    nav.dest = null;
+    stopNav();
+    resultsWrap.style.display = "none";
+    clearBtn.style.display = "none";
+    resultsList.innerHTML = "";
+    resultsMeta.textContent = "—";
+    setStatus("Ready");
+    cacheUiState();
+  }
+
+  // Panel slide
+  function setPanelOpen(open){
+    panelOpen = !!open;
+
+    if (window.matchMedia("(min-width: 721px)").matches){
+      panel.style.transform = panelOpen ? "translateX(0)" : "translateX(110%)";
+    } else {
+      panel.style.transform = panelOpen ? "translateY(0)" : "translateY(72%)";
+    }
+
+    panelToggleBtn.textContent = panelOpen ? "▾" : "▸";
+    setTimeout(()=>map.invalidateSize(), 80);
+  }
+
+  function initPanelDrag(){
+    let startY = 0;
+    let startTransform = 0;
+    let dragging = false;
+
+    const isDesktop = () => window.matchMedia("(min-width: 721px)").matches;
+
+    panelHandle.addEventListener("pointerdown", (e)=>{
+      dragging = true;
+      panelHandle.setPointerCapture(e.pointerId);
+      startY = e.clientY;
+
+      const m = panel.style.transform.match(/translateY\(([-0-9.]+)%\)/);
+      startTransform = m ? Number(m[1]) : (panelOpen ? 0 : 72);
     });
-    qEl.addEventListener("input", scheduleSuggest);
-    qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
 
-    nearBtn.addEventListener("click", nearMe);
-
-    locBtn.addEventListener("click", ()=>{
-      if (!trackingOn) startTracking();
-      else stopTracking();
-      cacheUiState();
+    panelHandle.addEventListener("pointermove", (e)=>{
+      if (!dragging) return;
+      if (isDesktop()) return;
+      const dy = e.clientY - startY;
+      const percent = (dy / window.innerHeight) * 100;
+      let next = startTransform + percent;
+      next = Math.min(Math.max(next, 0), 78);
+      panel.style.transition = "none";
+      panel.style.transform = `translateY(${next}%)`;
     });
 
-    modeSel.addEventListener("change", ()=>{
-      if (myLocation && nav.dest) startRoute();
-      cacheUiState();
+    panelHandle.addEventListener("pointerup", ()=>{
+      if (!dragging) return;
+      dragging = false;
+      panel.style.transition = "transform .22s ease";
+      if (isDesktop()) return;
+      const m = panel.style.transform.match(/translateY\(([-0-9.]+)%\)/);
+      const cur = m ? Number(m[1]) : 0;
+      if (cur > 38) setPanelOpen(false);
+      else setPanelOpen(true);
     });
 
-    voiceStyleSel.addEventListener("change", ()=>{
-      cacheUiState();
-      toast("Voice", `Set to: ${voiceStyleSel.value}`, "info", 2200);
+    panelHandle.addEventListener("click", ()=>{
+      if (!isDesktop()) return;
+      setPanelOpen(!panelOpen);
+    });
+  }
+
+  // Modal
+  function openModal(title, html){
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    modal.style.display = "flex";
+  }
+  function closeModal(){ modal.style.display = "none"; }
+  modalClose.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e)=>{ if (e.target === modal) closeModal(); });
+
+  function renderSavedManager(){
+    const saved = loadSaved();
+    const fixed = [
+      { key:"home", label:"Home", emoji:"🏠" },
+      { key:"school", label:"School", emoji:"🎓" },
+      { key:"work", label:"Work", emoji:"💼" },
+    ];
+
+    const fixedHtml = fixed.map(slot => {
+      const p = saved[slot.key];
+      const meta = p ? `Set · ${new Date(p.updatedAt || Date.now()).toLocaleString()}` : "Not set";
+      return `
+        <div class="mItem">
+          <div>
+            <b>${slot.emoji} ${slot.label}</b>
+            <div class="meta">${escapeHtml(meta)}</div>
+          </div>
+          <div class="mBtns">
+            <button class="btn slim" data-fixed-go="${slot.key}">Go</button>
+            <button class="btn slim" data-fixed-set="${slot.key}">Set</button>
+            <button class="btn slim danger" data-fixed-clear="${slot.key}">Clear</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const customHtml = (saved.custom.length ? saved.custom : []).map(item => `
+      <div class="mItem">
+        <div style="flex:1">
+          <b>⭐ ${escapeHtml(item.name)}</b>
+          <div class="meta">${escapeHtml(`Lat ${item.lat.toFixed(5)}, Lon ${item.lon.toFixed(5)}`)}</div>
+          <div class="mRow" style="margin-top:8px;">
+            <input class="mInput" data-custom-name="${item.id}" value="${escapeHtml(item.name)}" />
+          </div>
+        </div>
+        <div class="mBtns">
+          <button class="btn slim" data-custom-go="${item.id}">Go</button>
+          <button class="btn slim" data-custom-update="${item.id}">Rename</button>
+          <button class="btn slim danger" data-custom-del="${item.id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+
+    const html = `
+      <div class="small" style="opacity:.95">
+        Tip: select a destination then tap Home/School/Work to save instantly. Or use Set and tap the map.
+      </div>
+
+      <div class="mTitle" style="margin-top:14px">Fixed</div>
+      ${fixedHtml}
+
+      <div class="mTitle" style="margin-top:18px">Custom</div>
+      <div class="mRow">
+        <button class="btn slim primary" id="customAddBtn">+ Add custom place</button>
+        <button class="btn slim danger" id="customClearBtn">Clear all custom</button>
+      </div>
+      ${customHtml || `<div class="small" style="margin-top:10px">No custom places yet.</div>`}
+    `;
+
+    openModal("Saved places", html);
+
+    fixed.forEach(slot => {
+      modalBody.querySelector(`[data-fixed-go="${slot.key}"]`)?.addEventListener("click", ()=>{
+        const p = loadSaved()[slot.key];
+        if (!p) return toast("Not set", `${slot.label} is not set yet.`, "info");
+        setDestination({ lat:p.lat, lon:p.lon, name: slot.label, address:"" });
+        closeModal();
+      });
+      modalBody.querySelector(`[data-fixed-set="${slot.key}"]`)?.addEventListener("click", ()=>{
+        armSave = { type:"fixed", key: slot.key };
+        toast("Set place", `Tap on the map to set ${slot.label}.`, "info", 5200);
+        closeModal();
+      });
+      modalBody.querySelector(`[data-fixed-clear="${slot.key}"]`)?.addEventListener("click", ()=>{
+        const s = loadSaved();
+        s[slot.key] = null;
+        saveSaved(s);
+        toast("Cleared", `${slot.label} cleared.`, "info");
+        closeModal();
+      });
     });
 
-    clearBtn.addEventListener("click", ()=>{
-      clearAll();
-      toast("Cleared", "Results and route cleared.", "info");
-    });
-
-    togglePanelBtn.addEventListener("click", ()=> setCollapsed(!collapsed));
-
-    navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
-    navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
-    navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
-
-    navFollowBtn.addEventListener("click", ()=>{
-      followOn = !followOn;
-      navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
-      toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
-    });
-
-    navCenter.addEventListener("click", ()=>{
-      if (myLocation){
-        map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-      } else if (nav.dest){
-        map.setView([nav.dest.lat, nav.dest.lon], Math.max(map.getZoom(), 15));
-      } else {
-        map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
+    modalBody.querySelector("#customAddBtn")?.addEventListener("click", ()=>{
+      const name = prompt("Name this place:");
+      if (!name) return;
+      if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+        addCustomPlace(name, nav.dest.lat, nav.dest.lon);
+        toast("Saved", `"${name}" saved from selected destination.`, "ok");
+        closeModal();
+        return;
       }
+      armSave = { type:"custom", name };
+      toast("Add place", `Tap on the map to place: "${name}"`, "info", 5200);
+      closeModal();
     });
 
-    // =========================
-    // Init
-    // =========================
-    window.addEventListener("DOMContentLoaded", async ()=>{
-      await registerSW();
-      updateOfflineHint();
-      renderChips();
-      renderSavedMarkers();
-      restoreUiState();
+    modalBody.querySelector("#customClearBtn")?.addEventListener("click", ()=>{
+      if (!confirm("Delete all custom places?")) return;
+      const s = loadSaved();
+      s.custom = [];
+      saveSaved(s);
+      toast("Cleared", "All custom places deleted.", "info");
+      closeModal();
     });
+
+    (loadSaved().custom || []).forEach(item => {
+      modalBody.querySelector(`[data-custom-go="${item.id}"]`)?.addEventListener("click", ()=>{
+        setDestination({ lat:item.lat, lon:item.lon, name: item.name, address:"" });
+        closeModal();
+      });
+      modalBody.querySelector(`[data-custom-update="${item.id}"]`)?.addEventListener("click", ()=>{
+        const input = modalBody.querySelector(`[data-custom-name="${item.id}"]`);
+        const newName = input ? input.value : item.name;
+        updateCustomName(item.id, newName);
+        toast("Renamed", "Custom place renamed.", "ok");
+        closeModal();
+      });
+      modalBody.querySelector(`[data-custom-del="${item.id}"]`)?.addEventListener("click", ()=>{
+        if (!confirm("Delete this place?")) return;
+        deleteCustom(item.id);
+        toast("Deleted", "Custom place deleted.", "info");
+        closeModal();
+      });
+    });
+  }
+
+  // Cache UI state
+  function cacheUiState(){
+    try{
+      const state = {
+        q: qEl.value || "",
+        mode: modeSel.value || "walking",
+        voiceStyle: nav.voiceStyle || "off",
+        followOn: !!followOn,
+        trackingOn: !!trackingOn,
+        lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
+        lastResults: results.slice(0, 200),
+        selectedIndex
+      };
+      saveJson(UI_KEY, state);
+    } catch {}
+  }
+
+  function restoreUiState(){
+    const state = loadJson(UI_KEY, null);
+    if (!state) return;
+
+    if (state.q) qEl.value = state.q;
+    if (state.mode) modeSel.value = state.mode;
+    if (state.voiceStyle) nav.voiceStyle = state.voiceStyle;
+    if (typeof state.followOn === "boolean") followOn = state.followOn;
+    if (typeof state.trackingOn === "boolean") trackingOn = state.trackingOn;
+
+    updateVoiceBtn();
+    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
+    setTrackingBtn();
+
+    if (Array.isArray(state.lastResults) && state.lastResults.length){
+      results = state.lastResults
+        .map(x => ({ ...x, lat:Number(x.lat), lon:Number(x.lon) }))
+        .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+      selectedIndex = Number.isFinite(state.selectedIndex) ? state.selectedIndex : -1;
+      renderMarkers();
+      renderResults();
+    }
+
+    if (state.lastDest && Number.isFinite(state.lastDest.lat) && Number.isFinite(state.lastDest.lon)){
+      nav.dest = { ...state.lastDest };
+      updateWeather(nav.dest.lat, nav.dest.lon);
+    }
+  }
+
+  // Buttons wiring
+  btn.addEventListener("click", ()=>doSearch());
+  qEl.addEventListener("keydown", (e)=>{
+    if (e.key === "Enter") doSearch();
+    else scheduleSuggest();
+  });
+  qEl.addEventListener("input", scheduleSuggest);
+  qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
+
+  nearBtn.addEventListener("click", nearMe);
+
+  myLocBtn.addEventListener("click", ()=>{
+    if (trackingOn && myLocation) {
+      map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
+      toast("Centered", "Centered on your location.", "info", 1800);
+      return;
+    }
+    if (!navigator.geolocation) return toast("Unsupported", "Your browser does not support location.", "bad");
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        const rawLat = pos.coords.latitude, rawLon = pos.coords.longitude;
+        const outside = !inAthens(rawLat, rawLon);
+        const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
+        myLocation = myLocation || {};
+        myLocation.lat = use.lat; myLocation.lon = use.lon; myLocation.bearingDeg = 0; myLocation.lastUpdate = Date.now();
+        setMyMarkers(use.lat, use.lon, 0);
+        map.setView([use.lat, use.lon], 15);
+        toast(outside ? "Outside Athens" : "Location set", outside ? "GPS outside Athens (clamped).": "GPS acquired.", outside ? "info":"ok", 4200);
+        if (nav.dest) startRoute();
+        cacheUiState();
+      },
+      (err)=> toast("Location error", err?.message || "Could not get location.", "bad", 5200),
+      { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+    );
+  });
+
+  savedBtn.addEventListener("click", renderSavedManager);
+
+  trackBtn.addEventListener("click", ()=>{
+    trackingOn = !trackingOn;
+    applyTrackingDesiredState();
+    toast("Tracking", trackingOn ? "Live tracking enabled." : "Live tracking disabled.", "info");
+    cacheUiState();
+  });
+
+  clearBtn.addEventListener("click", ()=>{
+    clearAll();
+    toast("Cleared", "Results and route cleared.", "info");
+  });
+
+  modeSel.addEventListener("change", ()=>{
+    if (myLocation && nav.dest) startRoute();
+    cacheUiState();
+  });
+
+  panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
+
+  navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
+  navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
+  navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
+
+  navVoice.addEventListener("click", ()=>{
+    nav.voiceStyle = (nav.voiceStyle === "off") ? "soft" : "off";
+    updateVoiceBtn();
+    toast("Voice", nav.voiceStyle === "off" ? "Voice disabled." : "Soft voice enabled.", "info");
+    cacheUiState();
+  });
+
+  navFollowBtn.addEventListener("click", ()=>{
+    followOn = !followOn;
+    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
+    toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
+    cacheUiState();
+  });
+
+  navCenter.addEventListener("click", ()=>{
+    if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
+    else if (nav.dest) map.setView([nav.dest.lat, nav.dest.lon], Math.max(map.getZoom(), 15));
+    else map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
+  });
+
+  zoomInBtn.addEventListener("click", ()=> map.zoomIn());
+  zoomOutBtn.addEventListener("click", ()=> map.zoomOut());
+
+  // Init
+  window.addEventListener("DOMContentLoaded", async ()=>{
+    setTimeout(()=>{ splash.classList.add("hidden"); }, 900);
+    map.once("load", ()=> setTimeout(()=> splash.classList.add("hidden"), 300));
+
+    updateOfflineHint();
+    renderChips();
+    renderSavedMarkers();
+    restoreUiState();
+    initPanelDrag();
+    setPanelOpen(true);
+
+    applyTrackingDesiredState();
+    window.addEventListener("pointerdown", armTrackingOnce, true);
+
+    registerSW();
+
+    toast("Athens Navigator", `v${APP_VERSION} ready. Tap the map to pin a destination.`, "info", 2800);
+  });
   </script>
 </body>
 </html>
