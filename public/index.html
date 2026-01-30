@@ -2,355 +2,546 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>CPYA Map (Athens)</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
-    body { display: flex; flex-direction: column; }
-
-    #top { padding: 10px; border-bottom: 1px solid #ddd; background: #fff; }
-    #mapWrap { flex: 1; position: relative; }
-    #map { width: 100%; height: 100%; min-height: 400px; }
-
-    input { width: 70%; padding: 10px; font-size: 16px; }
-    button, select { padding: 10px; font-size: 16px; }
-
-    #out { margin-top: 8px; font-size: 14px; }
-    #recent { margin-top: 8px; font-size: 13px; opacity: 0.95; }
-    #status { margin-top: 6px; font-size: 13px; opacity: 0.75; }
-
-    #meta { display:none; } /* hidden until a search selects something */
-
-    a { text-decoration: none; }
-    .chip {
-      display:inline-block;
-      padding:6px 10px;
-      border:1px solid #ddd;
-      border-radius:999px;
-      margin:4px 6px 0 0;
-      background:#fff;
-      cursor:pointer;
+    :root{
+      --bg:#0b0c10;
+      --card:#111318;
+      --card2:#151824;
+      --text:#e8eaed;
+      --muted:#aab0bb;
+      --line:rgba(255,255,255,.10);
+      --accent:#4aa3ff;
+      --danger:#ff4d4d;
+      --ok:#00d084;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+      --radius2: 22px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
     }
-    .chip:hover { background:#f6f6f6; }
-    .small { font-size: 12px; opacity: 0.8; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #07080b; color: var(--text); }
+    #app { height: 100%; display:flex; flex-direction:column; }
 
-    /* Floating cards on map */
-    .floatCard {
-      position: absolute;
-      z-index: 999;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(6px);
-      padding: 10px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      font-size: 14px;
-      max-width: 280px;
-      pointer-events: auto;
+    /* Map */
+    #map { flex: 1; width: 100%; }
+
+    /* Floating system */
+    .card{
+      background: rgba(17,19,24,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
     }
 
-    /* Athens badge (NOTE: overlap issues can be tuned later, but now zoom is custom so it won't collide) */
-    #athensBadge {
-      left: 12px;
-      top: 12px;
-      right: auto;
-      max-width: none;
-      font-size: 13px;
-    }
-    #athensHint { margin-top: 4px; font-size: 12px; opacity: 0.75; }
-
-    /* Weather floating card */
-    #weatherCard {
-      right: 12px;
-      top: 12px;
-      display: none;
+    /* Top / Bottom sheet container */
+    #panel {
+      position: relative;
+      z-index: 1000;
+      background: rgba(8,10,14,.75);
+      border-bottom: 1px solid var(--line);
+      padding: calc(10px + var(--safe-top)) 12px 10px;
     }
 
-    /* Custom horizontal zoom at bottom center */
-    .zoomBar{
-      position:absolute;
-      left:50%;
-      bottom:12px;
-      transform:translateX(-50%);
-      z-index:1000;
+    #panelInner{
       display:flex;
       gap:10px;
-      pointer-events:auto;
+      align-items:center;
+      flex-wrap:wrap;
     }
-    .zoomBtn{
-      width:44px;
-      height:44px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(6px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      font-size:22px;
+
+    .input{
+      flex: 1 1 220px;
+      min-width: 160px;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px;
+      font-size: 16px;
+      outline:none;
+    }
+    .btn{
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px;
+      font-size: 15px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.12); }
+    .btn.primary{ background: rgba(74,163,255,.18); border-color: rgba(74,163,255,.35); }
+    .btn.danger{ background: rgba(255,77,77,.14); border-color: rgba(255,77,77,.35); }
+    .btn.ghost{ background: transparent; }
+
+    .row{
+      margin-top: 10px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    select{
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px;
+      font-size: 15px;
+    }
+
+    .small { font-size: 12px; color: var(--muted); }
+
+    /* Results list */
+    #resultsWrap{
+      margin-top: 10px;
+      display:none;
+    }
+    #resultsHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom: 8px;
+    }
+    #resultsList{
+      max-height: 220px;
+      overflow:auto;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .res{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
       cursor:pointer;
     }
-    .zoomBtn:active{ transform: scale(0.98); }
+    .res:last-child{ border-bottom:none; }
+    .res:hover{ background: rgba(255,255,255,.06); }
+    .res.selected{ background: rgba(74,163,255,.16); outline: 1px solid rgba(74,163,255,.35); }
+    .resTitle{ font-size: 14px; }
+    .resMeta{ font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      color: var(--text);
+      user-select:none;
+      cursor:pointer;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+    .pill:hover{ background: rgba(255,255,255,.10); }
 
-    /* Route bar */
-    #routeBar {
+    /* Suggestions dropdown */
+    #suggestBox{
+      position:absolute;
+      top: calc(12px + var(--safe-top) + 52px);
+      left: 12px;
+      right: 12px;
       display:none;
-      margin-top: 8px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      background: #fafafa;
-      font-size: 14px;
+      z-index: 1200;
+      border-radius: 16px;
+      overflow:hidden;
     }
-    .modeBtn {
-      padding: 8px 10px;
-      font-size: 14px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      background: #fff;
-      cursor: pointer;
-      margin-left: 6px;
+    #suggestBox .item{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+      background: rgba(17,19,24,.96);
     }
-    .modeBtn.active {
-      border-color: #333;
-      font-weight: 700;
+    #suggestBox .item:last-child{ border-bottom:none; }
+    #suggestBox .item:hover{ background: rgba(255,255,255,.06); }
+    #suggestBox .item .sub{ font-size:12px; color: var(--muted); margin-top:3px; }
+
+    /* Loading overlay + skeletons */
+    #loadingOverlay{
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 5000;
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(3px);
+    }
+    .loaderCard{
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(17,19,24,.92);
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:12px;
+      max-width: 92vw;
+    }
+    .spinner{
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: rgba(255,255,255,.9);
+      border-radius: 999px;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .skeleton{
+      background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.12), rgba(255,255,255,.06));
+      background-size: 200% 100%;
+      animation: shimmer 1.1s infinite;
+      border-radius: 10px;
+    }
+    @keyframes shimmer { 0%{background-position: 200% 0} 100%{background-position: -200% 0} }
+
+    /* Toasts */
+    #toastWrap{
+      position: fixed;
+      top: calc(12px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6000;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      width: min(520px, 92vw);
+      pointer-events:none;
+    }
+    .toast{
+      pointer-events:auto;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(17,19,24,.92);
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .toast .tTitle{ font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .toast .tMsg{ font-size: 13px; color: var(--muted); }
+    .toast .x{
+      margin-left:auto;
+      cursor:pointer;
+      opacity:.8;
+      user-select:none;
+    }
+    .toast.ok{ border-color: rgba(0,208,132,.35); }
+    .toast.bad{ border-color: rgba(255,77,77,.35); }
+    .toast.info{ border-color: rgba(74,163,255,.35); }
+
+    /* Floating weather (bottom-left) */
+    #weatherCard{
+      position: fixed;
+      left: 12px;
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1200;
+      padding: 10px 12px;
+      border-radius: 16px;
+      display:none;
+      min-width: 180px;
+      max-width: min(320px, 80vw);
+    }
+    #weatherCard .line{ font-size: 13px; color: var(--muted); margin-top: 2px; }
+    #weatherCard .big{ font-size: 18px; font-weight: 800; }
+    #weatherCard .tiny{ font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    /* Turn-by-turn card (bottom-center) */
+    #navCard{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1200;
+      padding: 10px 12px;
+      border-radius: 18px;
+      display:none;
+      width: min(520px, 92vw);
+    }
+    #navTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 6px;
+    }
+    #navInstr{
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    #navSub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    #navBtns{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top: 10px;
     }
 
-    /* Directions panel (compact / interactive) */
-    #dirPanel {
-      display:none;
-      margin-top: 8px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      background: #fff;
-      font-size: 14px;
+    /* Mini menu */
+    #menuRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    #modeSel{ min-width: 140px; }
+
+    /* Mobile: turn top into bottom sheet */
+    @media (max-width: 720px){
+      #panel{
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        border-bottom: none;
+        border-top: 1px solid var(--line);
+        padding: 10px 12px calc(10px + var(--safe-bottom));
+        background: rgba(8,10,14,.90);
+        z-index: 2000;
+        border-top-left-radius: var(--radius2);
+        border-top-right-radius: var(--radius2);
+      }
+      #panelHandle{
+        width: 44px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.22);
+        margin: 4px auto 10px;
+      }
+      #resultsList{ max-height: 170px; }
+      #suggestBox{
+        top: auto;
+        bottom: calc(10px + var(--safe-bottom) + 110px);
+      }
+      /* avoid overlapping with bottom sheet */
+      #weatherCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
+      #navCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
     }
   </style>
 </head>
 
 <body>
-  <div id="top">
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-      <input id="q" placeholder='Search in Athens (e.g. "lidl" or "ok market marousi")' />
-      <button id="btn" type="button">Find</button>
-      <button id="locBtn" type="button">My location</button>
-      <button id="toggleTop" type="button" title="Collapse/expand">▾</button>
-    </div>
+  <div id="toastWrap"></div>
 
-    <div id="topBody">
-      <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <select id="nearSel">
-          <option value="cafe">☕ Cafes near me</option>
-          <option value="food">🍕 Food near me</option>
-          <option value="pharmacy">💊 Pharmacies near me</option>
-          <option value="supermarket">🛒 Supermarkets near me</option>
-        </select>
-        <button id="nearBtn" type="button">Near me</button>
-        <span class="small">(uses your location)</span>
-      </div>
-
-      <div id="recent"></div>
-      <div id="status"></div>
-
-      <div id="routeBar">
-        <b>Route:</b> <span id="routeSummary">—</span>
-        <span style="margin-left:8px;"></span>
-        <button id="modeDrive" class="modeBtn active" type="button">Driving</button>
-        <button id="modeWalk" class="modeBtn" type="button">Walking</button>
-      </div>
-
-      <!-- Compact / interactive directions -->
-      <div id="dirPanel">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-          <b>Directions</b>
-          <button id="toggleAllSteps" class="modeBtn" type="button">Show all</button>
-        </div>
-
-        <div id="nextStepBox" style="margin-top:10px; padding:10px; border:1px solid #eee; border-radius:10px; background:#fafafa;">
-          <div style="font-size:13px; opacity:.75;">Next step</div>
-          <div id="nextStepText" style="margin-top:4px; font-size:16px; font-weight:700;">—</div>
-          <div id="nextStepDist" style="margin-top:4px; font-size:13px; opacity:.75;">—</div>
-
-          <div style="margin-top:10px; display:flex; gap:8px;">
-            <button id="prevStep" class="modeBtn" type="button">Prev</button>
-            <button id="nextStep" class="modeBtn" type="button">Next</button>
-          </div>
-        </div>
-
-        <ol id="dirList" style="display:none; margin:10px 0 0 18px; padding:0;"></ol>
-      </div>
-
-      <div id="out"></div>
-
-      <div id="meta" style="margin-top:8px; font-size:14px; opacity:.9;">
-        <div>🕒 Local time: <span id="localTime">—</span></div>
-        <div>🧭 Compass: <span id="headingText">—</span></div>
-
-        <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
-          <div id="compass" style="width:44px; height:44px; border:2px solid #333; border-radius:50%;
-               display:flex; align-items:center; justify-content:center; position:relative;">
-            <div id="needle" style="width:2px; height:18px; background:#333; position:absolute; top:6px;"></div>
-            <div style="font-size:10px; position:absolute; bottom:4px;">N</div>
-          </div>
-          <button id="enableCompass" type="button" style="display:none;">Enable Compass</button>
-        </div>
+  <div id="loadingOverlay">
+    <div class="loaderCard">
+      <div class="spinner"></div>
+      <div>
+        <div style="font-weight:800">Working…</div>
+        <div style="font-size:13px;color:var(--muted)" id="loadingText">Loading</div>
       </div>
     </div>
   </div>
 
-  <div id="mapWrap">
+  <div id="weatherCard" class="card"></div>
+
+  <div id="navCard" class="card">
+    <div id="navTop">
+      <div>
+        <div id="navInstr">—</div>
+        <div id="navSub">—</div>
+      </div>
+      <button class="btn ghost" id="navClose" title="End navigation">✕</button>
+    </div>
+    <div id="navBtns">
+      <button class="btn" id="navPrev">◀ Prev</button>
+      <button class="btn primary" id="navNext">Next ▶</button>
+      <button class="btn" id="navVoice">🔈 Voice: Off</button>
+      <button class="btn" id="navCenter">📍 Center</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <div id="panel">
+      <div id="panelHandle"></div>
+
+      <div id="panelInner">
+        <input id="q" class="input" placeholder='Search: "lidl" / "ok market marousi"' autocomplete="off" />
+        <button id="btn" class="btn primary" type="button">Find</button>
+        <button id="locBtn" class="btn" type="button">My location</button>
+        <button id="athBtn" class="btn" type="button" title="Return to Athens">Athens</button>
+        <button id="togglePanel" class="btn" type="button" title="Collapse/expand">▾</button>
+      </div>
+
+      <div id="suggestBox" class="card"></div>
+
+      <div id="panelBody">
+        <div class="row" id="menuRow">
+          <select id="nearSel">
+            <option value="cafe">☕ Cafes near me</option>
+            <option value="food">🍕 Food near me</option>
+            <option value="pharmacy">💊 Pharmacies near me</option>
+            <option value="supermarket">🛒 Supermarkets near me</option>
+          </select>
+          <button id="nearBtn" class="btn" type="button">Near me</button>
+
+          <select id="modeSel">
+            <option value="walking">🚶 Walking</option>
+            <option value="driving">🚗 Driving</option>
+          </select>
+
+          <button id="clearBtn" class="btn danger" type="button" style="display:none;">Clear</button>
+          <span class="small" id="status">Ready</span>
+        </div>
+
+        <div id="chips"></div>
+
+        <div id="resultsWrap">
+          <div id="resultsHeader">
+            <div style="font-weight:800">Results</div>
+            <div class="small" id="resultsMeta">—</div>
+          </div>
+          <div id="resultsList"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="map"></div>
-
-    <div id="athensBadge" class="floatCard">
-      <b>CPYA Map — Athens</b>
-      <div id="athensHint">Search is optimized for the Athens metro area.</div>
-    </div>
-
-    <div id="weatherCard" class="floatCard"></div>
-
-    <!-- Custom bottom-center zoom -->
-    <div id="zoomBar" class="zoomBar">
-      <button id="zoomOut" class="zoomBtn" type="button">−</button>
-      <button id="zoomIn" class="zoomBtn" type="button">+</button>
-    </div>
   </div>
 
   <script>
-    // ---------- Athens bbox ----------
-    const ATHENS_BBOX = { west: 23.65, south: 37.85, east: 24.05, north: 38.10 };
+    // =========================
+    // Athens bounds (slightly larger + softer clamp)
+    // =========================
+    // Original: west 23.65 south 37.85 east 24.05 north 38.10
+    // Expanded (~1.5x feel): allow Piraeus + outskirts more naturally
+    const ATHENS_BBOX = { west: 23.45, south: 37.75, east: 24.25, north: 38.20 };
+
     const ATHENS_BOUNDS = L.latLngBounds(
       [ATHENS_BBOX.south, ATHENS_BBOX.west],
       [ATHENS_BBOX.north, ATHENS_BBOX.east]
     );
-
-    // Make bounds feel ~1.5x bigger (less blocking)
-    const ATHENS_VIEW_BOUNDS = ATHENS_BOUNDS.pad(0.50);
-
-    // ---------- DOM ----------
-    const qEl = document.getElementById("q");
-    const btn = document.getElementById("btn");
-    const locBtn = document.getElementById("locBtn");
-    const nearSel = document.getElementById("nearSel");
-    const nearBtn = document.getElementById("nearBtn");
-
-    const recentEl = document.getElementById("recent");
-    const statusEl = document.getElementById("status");
-    const outEl = document.getElementById("out");
-
-    const toggleTopBtn = document.getElementById("toggleTop");
-    const topBody = document.getElementById("topBody");
-
-    const metaEl = document.getElementById("meta");
-    const localTimeEl = document.getElementById("localTime");
-
-    const headingTextEl = document.getElementById("headingText");
-    const needle = document.getElementById("needle");
-    const enableCompassBtn = document.getElementById("enableCompass");
-
-    const weatherCard = document.getElementById("weatherCard");
-
-    const routeBar = document.getElementById("routeBar");
-    const routeSummaryEl = document.getElementById("routeSummary");
-    const modeDriveBtn = document.getElementById("modeDrive");
-    const modeWalkBtn = document.getElementById("modeWalk");
-
-    const dirPanel = document.getElementById("dirPanel");
-    const dirList = document.getElementById("dirList");
-    const toggleAllStepsBtn = document.getElementById("toggleAllSteps");
-    const nextStepTextEl = document.getElementById("nextStepText");
-    const nextStepDistEl = document.getElementById("nextStepDist");
-    const prevStepBtn = document.getElementById("prevStep");
-    const nextStepBtn = document.getElementById("nextStep");
-
-    // ---------- MAP (disable default zoom controls) ----------
-    const map = L.map("map", {
-      maxBounds: ATHENS_VIEW_BOUNDS,
-      maxBoundsViscosity: 0.35,
-      zoomControl: false
-    }).fitBounds(ATHENS_BOUNDS);
-
-    map.setMinZoom(map.getZoom() - 1);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
-    const allMarkers = L.layerGroup().addTo(map);
-
-    // ---------- STATE ----------
-    let myLocation = null;
-    let myMarker = null;
-    let routeLine = null;
-    let clickPin = null;
-
-    let results = [];
-    let top5 = [];
-    let collapsed = false;
-
-    let travelMode = "driving"; // "driving" | "walking"
-    let lastPicked = null;
-
-    // directions state
-    let currentSteps = [];
-    let stepIndex = 0;
-    let showAllSteps = false;
-
-    // ---------- Helpers ----------
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[m]));
-    }
 
     function inAthens(lat, lon) {
       return lon >= ATHENS_BBOX.west && lon <= ATHENS_BBOX.east &&
              lat >= ATHENS_BBOX.south && lat <= ATHENS_BBOX.north;
     }
 
-    function googleUrl(lat, lon) {
-      return `https://www.google.com/maps?q=${lat},${lon}`;
+    function clampToAthens(lat, lon){
+      const clampedLat = Math.min(Math.max(lat, ATHENS_BBOX.south), ATHENS_BBOX.north);
+      const clampedLon = Math.min(Math.max(lon, ATHENS_BBOX.west), ATHENS_BBOX.east);
+      return { lat: clampedLat, lon: clampedLon };
     }
 
-    function googleDirectionsUrl(fromLat, fromLon, toLat, toLon) {
-      return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLon}&destination=${toLat},${toLon}&travelmode=${travelMode}`;
+    // =========================
+    // DOM
+    // =========================
+    const qEl = document.getElementById("q");
+    const btn = document.getElementById("btn");
+    const locBtn = document.getElementById("locBtn");
+    const athBtn = document.getElementById("athBtn");
+    const togglePanelBtn = document.getElementById("togglePanel");
+    const panelBody = document.getElementById("panelBody");
+
+    const nearSel = document.getElementById("nearSel");
+    const nearBtn = document.getElementById("nearBtn");
+    const modeSel = document.getElementById("modeSel");
+
+    const statusEl = document.getElementById("status");
+    const chipsEl = document.getElementById("chips");
+
+    const resultsWrap = document.getElementById("resultsWrap");
+    const resultsList = document.getElementById("resultsList");
+    const resultsMeta = document.getElementById("resultsMeta");
+    const clearBtn = document.getElementById("clearBtn");
+
+    const suggestBox = document.getElementById("suggestBox");
+
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loadingText = document.getElementById("loadingText");
+    const toastWrap = document.getElementById("toastWrap");
+
+    const weatherCard = document.getElementById("weatherCard");
+
+    const navCard = document.getElementById("navCard");
+    const navInstr = document.getElementById("navInstr");
+    const navSub = document.getElementById("navSub");
+    const navPrev = document.getElementById("navPrev");
+    const navNext = document.getElementById("navNext");
+    const navClose = document.getElementById("navClose");
+    const navVoice = document.getElementById("navVoice");
+    const navCenter = document.getElementById("navCenter");
+
+    // =========================
+    // Map
+    // =========================
+    const map = L.map("map", {
+      maxBounds: ATHENS_BOUNDS,
+      maxBoundsViscosity: 0.65 // softer = less “blocked” feeling
+    }).fitBounds(ATHENS_BOUNDS);
+
+    // keep zoom reasonable
+    map.setMinZoom(map.getZoom() - 2);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+    let myMarker = null;
+    let destMarker = null;
+    let routeLine = null;
+
+    // click-to-route: drop pin + route
+    map.on("click", (e) => {
+      const { lat, lng } = e.latlng;
+      setDestination({ lat, lon: lng, name: "Pinned location", address: "" }, { fromMapClick: true });
+      toast("Pinned", "Destination pinned. Calculating route…", "info");
+    });
+
+    // =========================
+    // State
+    // =========================
+    let collapsed = false;
+
+    let myLocation = null;  // {lat, lon, rawOutside:boolean}
+    let results = [];
+    let selectedIndex = -1;
+
+    // Navigation steps
+    let nav = {
+      mode: "walking",
+      dest: null,
+      steps: [],
+      stepIndex: 0,
+      distanceM: null,
+      durationS: null,
+      voiceOn: false
+    };
+
+    // =========================
+    // Utils
+    // =========================
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
     }
 
-    function haversineKm(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const toRad = (x) => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+    function formatDistanceMeters(m){
+      if (!Number.isFinite(m)) return "—";
+      if (m < 1000) return `${Math.round(m)} m`;
+      return `${(m/1000).toFixed(1)} km`;
     }
 
-    function formatDistance(km) {
-      if (!Number.isFinite(km)) return "";
-      if (km < 1) return `${Math.round(km * 1000)} m`;
-      return `${km.toFixed(1)} km`;
-    }
-
-    function minutesForWalking(km) {
-      const speedKmh = 4.8;
-      return Math.max(1, Math.round((km / speedKmh) * 60));
-    }
-
-    function shouldShowAddress(x) {
-      const name = String(x?.name || "");
-      const addr = String(x?.address || "");
-      if (!addr) return false;
-
-      const nameLooksLikeFull = name.includes(",") && name.length > 40;
-      if (nameLooksLikeFull) return false;
-
-      const n = name.toLowerCase();
-      const a = addr.toLowerCase();
-      if (n.includes(a) || a.includes(n)) return false;
-
-      return true;
+    function formatDuration(s){
+      if (!Number.isFinite(s)) return "—";
+      const min = Math.round(s/60);
+      if (min < 60) return `${min} min`;
+      const h = Math.floor(min/60);
+      const rem = min % 60;
+      return `${h} h ${rem} min`;
     }
 
     function weatherIcon(code) {
@@ -365,371 +556,592 @@
       return "🌦️";
     }
 
-    function showMetaPanels() {
-      metaEl.style.display = "block";
-      weatherCard.style.display = "block";
+    function setLoading(on, text="Working…"){
+      loadingText.textContent = text;
+      loadingOverlay.style.display = on ? "flex" : "none";
     }
 
-    function setModeButtons() {
-      modeDriveBtn.classList.toggle("active", travelMode === "driving");
-      modeWalkBtn.classList.toggle("active", travelMode === "walking");
+    function toast(title, msg, type="info", ms=3200){
+      const el = document.createElement("div");
+      el.className = `toast ${type}`;
+      el.innerHTML = `
+        <div>
+          <div class="tTitle">${escapeHtml(title)}</div>
+          <div class="tMsg">${escapeHtml(msg)}</div>
+        </div>
+        <div class="x">✕</div>
+      `;
+      el.querySelector(".x").addEventListener("click", () => el.remove());
+      toastWrap.appendChild(el);
+      setTimeout(() => { if (el.isConnected) el.remove(); }, ms);
     }
 
-    // ---------- Directions helpers ----------
-    function stepInstruction(step) {
-      const t = step?.maneuver?.type || "";
-      const m = step?.maneuver?.modifier || "";
-      const road = (step?.name || "").trim();
+    function setStatus(s){ statusEl.textContent = s; }
 
-      if (t === "depart") return `Start${road ? " on " + road : ""}`;
-      if (t === "arrive") return "Arrive at destination";
-
-      if (t === "roundabout") {
-        const ex = step?.maneuver?.exit;
-        return `At the roundabout, take exit ${ex || ""}${road ? " onto " + road : ""}`.trim();
-      }
-
-      if (t === "turn") {
-        // fix awkward "turn straight" wording
-        if (m === "straight") return `Go straight${road ? " on " + road : ""}`.trim();
-        return `Turn ${m || ""}${road ? " onto " + road : ""}`.trim();
-      }
-
-      if (t === "continue") {
-        if (m === "straight") return `Continue straight${road ? " on " + road : ""}`.trim();
-        return `Continue${road ? " on " + road : ""}`.trim();
-      }
-
-      if (t === "merge") return `Merge${road ? " onto " + road : ""}`.trim();
-      if (t === "fork") return `Keep ${m || ""}${road ? " on " + road : ""}`.trim();
-      if (t === "new name") return `Continue${road ? " on " + road : ""}`.trim();
-
-      // fallback
-      return `${t}${m ? " (" + m + ")" : ""}${road ? " — " + road : ""}`.trim();
-    }
-
-    function renderDirections(steps) {
-      currentSteps = Array.isArray(steps) ? steps : [];
-      stepIndex = 0;
-
-      if (!currentSteps.length) {
-        dirPanel.style.display = "none";
-        dirList.innerHTML = "";
-        return;
-      }
-
-      dirPanel.style.display = "block";
-
-      function metersLabel(meters) {
-        return meters >= 1000 ? `${(meters/1000).toFixed(1)} km` : `${Math.round(meters)} m`;
-      }
-
-      function renderStep() {
-        const s = currentSteps[stepIndex];
-        const inst = stepInstruction(s);
-        const meters = Number(s?.distance || 0);
-
-        nextStepTextEl.textContent = inst || "—";
-        nextStepDistEl.textContent = meters ? `In ${metersLabel(meters)}` : "";
-
-        prevStepBtn.disabled = stepIndex <= 0;
-        nextStepBtn.disabled = stepIndex >= currentSteps.length - 1;
-      }
-
-      // full list (optional)
-      dirList.innerHTML = currentSteps.slice(0, 60).map(s => {
-        const inst = stepInstruction(s);
-        const meters = Number(s.distance || 0);
-        const suffix = meters ? metersLabel(meters) : "";
-        return `<li style="margin:6px 0;">${escapeHtml(inst)} <span style="opacity:.65">· ${escapeHtml(suffix)}</span></li>`;
-      }).join("");
-
-      dirList.style.display = showAllSteps ? "block" : "none";
-      toggleAllStepsBtn.textContent = showAllSteps ? "Hide all" : "Show all";
-
-      renderStep();
-
-      prevStepBtn.onclick = () => { if (stepIndex > 0) { stepIndex--; renderStep(); } };
-      nextStepBtn.onclick = () => { if (stepIndex < currentSteps.length - 1) { stepIndex++; renderStep(); } };
-
-      toggleAllStepsBtn.onclick = () => {
-        showAllSteps = !showAllSteps;
-        dirList.style.display = showAllSteps ? "block" : "none";
-        toggleAllStepsBtn.textContent = showAllSteps ? "Hide all" : "Show all";
-      };
-    }
-
-    // ---------- Recents ----------
+    // =========================
+    // Recents + Saved places
+    // =========================
     const RECENT_KEY = "cpya_recent_searches";
+    const SAVED_KEY  = "cpya_saved_places"; // {home:{lat,lon,label}, school:{...}}
 
-    function loadRecent() {
-      try {
-        const arr = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
-        return Array.isArray(arr) ? arr : [];
-      } catch {
-        return [];
-      }
+    function loadJson(key, fallback){
+      try{ const v = JSON.parse(localStorage.getItem(key) || ""); return v ?? fallback; }
+      catch{ return fallback; }
+    }
+    function saveJson(key, value){
+      localStorage.setItem(key, JSON.stringify(value));
     }
 
-    function saveRecent(q) {
+    function loadRecent(){
+      const arr = loadJson(RECENT_KEY, []);
+      return Array.isArray(arr) ? arr : [];
+    }
+    function saveRecent(q){
       const cur = loadRecent().filter(x => String(x).toLowerCase() !== String(q).toLowerCase());
       cur.unshift(q);
-      localStorage.setItem(RECENT_KEY, JSON.stringify(cur.slice(0, 6)));
-      renderRecent();
+      saveJson(RECENT_KEY, cur.slice(0, 8));
+      renderChips();
     }
 
-    function renderRecent() {
-      const arr = loadRecent();
-      if (!arr.length) { recentEl.innerHTML = ""; return; }
+    function loadSaved(){
+      const o = loadJson(SAVED_KEY, {});
+      return (o && typeof o === "object") ? o : {};
+    }
+    function saveSaved(o){ saveJson(SAVED_KEY, o); renderChips(); }
 
-      recentEl.innerHTML = `<b>Recent:</b> ` + arr.map((s, idx) =>
-        `<span class="chip" data-recent="${idx}">${escapeHtml(s)}</span>`
-      ).join("");
+    function renderChips(){
+      const rec = loadRecent();
+      const saved = loadSaved();
 
-      recentEl.querySelectorAll("[data-recent]").forEach(el => {
-        el.addEventListener("click", () => {
-          const i = Number(el.getAttribute("data-recent"));
-          qEl.value = arr[i];
-          doSearch();
+      const parts = [];
+
+      // saved places
+      if (saved.home) parts.push(`<span class="pill" data-saved="home">🏠 Home</span>`);
+      else parts.push(`<span class="pill" data-set="home">+ Set Home</span>`);
+
+      if (saved.school) parts.push(`<span class="pill" data-saved="school">🎓 School</span>`);
+      else parts.push(`<span class="pill" data-set="school">+ Set School</span>`);
+
+      // recents
+      rec.slice(0,6).forEach((s,i) => parts.push(`<span class="pill" data-recent="${i}">${escapeHtml(s)}</span>`));
+
+      chipsEl.innerHTML = parts.join("");
+
+      chipsEl.querySelectorAll("[data-recent]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const idx = Number(el.getAttribute("data-recent"));
+          const q = rec[idx];
+          qEl.value = q;
+          doSearch(q);
+        });
+      });
+
+      chipsEl.querySelectorAll("[data-set]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const key = el.getAttribute("data-set"); // home/school
+          if (!myLocation){
+            toast("Need location", "Tap “My location” first, then set this place.", "bad");
+            return;
+          }
+          const savedNow = loadSaved();
+          savedNow[key] = { lat: myLocation.lat, lon: myLocation.lon, label: key };
+          saveSaved(savedNow);
+          toast("Saved", `${key === "home" ? "Home" : "School"} saved to your current location.`, "ok");
+        });
+      });
+
+      chipsEl.querySelectorAll("[data-saved]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const key = el.getAttribute("data-saved");
+          const savedNow = loadSaved();
+          const p = savedNow[key];
+          if (!p) return;
+          setDestination({ lat: p.lat, lon: p.lon, name: key === "home" ? "Home" : "School", address:"" });
         });
       });
     }
 
-    // ---------- Weather + time ----------
-    async function updateLocalTime(lat, lon) {
-      localTimeEl.textContent = "…";
-      try {
-        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+    // =========================
+    // Suggestions (debounced)
+    // =========================
+    let suggestTimer = null;
+    async function fetchSuggestions(q){
+      if (!q || q.length < 2) { suggestBox.style.display="none"; return; }
+
+      try{
+        const r = await fetch("/where", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ q })
+        });
         const d = await r.json();
-        const t = d?.data?.current?.time;
-        localTimeEl.textContent = t ? String(t).replace("T", " ") : "—";
+        const list = Array.isArray(d?.top5) ? d.top5 : (Array.isArray(d?.results) ? d.results.slice(0,5) : []);
+        const inBox = list.filter(x => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lon))).slice(0,5);
+
+        if (!inBox.length) { suggestBox.style.display="none"; return; }
+
+        suggestBox.innerHTML = inBox.map((x,i)=>`
+          <div class="item" data-sug="${i}">
+            <div>${escapeHtml(x.name || "Place")}</div>
+            <div class="sub">${escapeHtml(x.address || "")}</div>
+          </div>
+        `).join("");
+        suggestBox.style.display="block";
+
+        suggestBox.querySelectorAll("[data-sug]").forEach(el=>{
+          el.addEventListener("click", ()=>{
+            const idx = Number(el.getAttribute("data-sug"));
+            const pick = inBox[idx];
+            suggestBox.style.display="none";
+            qEl.value = pick.name || q;
+            // show it as destination instantly
+            setDestination(pick);
+          });
+        });
       } catch {
-        localTimeEl.textContent = "—";
+        suggestBox.style.display="none";
       }
     }
 
-    async function updateWeather(lat, lon) {
-      weatherCard.innerHTML = `<b>Weather</b><br>Loading…`;
-      try {
-        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
-        const d = await r.json();
-        if (!d?.ok) { weatherCard.innerHTML = `<b>Weather</b><br>Unavailable`; return; }
-
-        const c = d.data?.current;
-        if (!c) { weatherCard.innerHTML = `<b>Weather</b><br>Unavailable`; return; }
-
-        const icon = weatherIcon(c.weather_code);
-        weatherCard.innerHTML =
-          `<b>Weather</b><br>
-           ${icon} <b>${Math.round(c.temperature_2m)}°C</b> (feels ${Math.round(c.apparent_temperature)}°C)<br>
-           Wind: ${Math.round(c.wind_speed_10m)} km/h<br>
-           <span class="small">${String(c.time || "").replace("T"," ")}</span>`;
-      } catch {
-        weatherCard.innerHTML = `<b>Weather</b><br>Error`;
-      }
+    function scheduleSuggest(){
+      clearTimeout(suggestTimer);
+      const q = qEl.value.trim();
+      suggestTimer = setTimeout(()=>fetchSuggestions(q), 220);
     }
 
-    // ---------- Routing ----------
-    async function drawRouteTo(destLat, destLon) {
-      if (!myLocation) return;
+    function hideSuggest(){ suggestBox.style.display="none"; }
 
-      routeBar.style.display = "block";
+    // =========================
+    // Results rendering
+    // =========================
+    function clearAll(){
+      results = [];
+      selectedIndex = -1;
+      markersLayer.clearLayers();
+      if (routeLine) { routeLine.remove(); routeLine = null; }
+      if (destMarker) { destMarker.remove(); destMarker = null; }
+      stopNav();
+      resultsWrap.style.display = "none";
+      clearBtn.style.display = "none";
+      resultsList.innerHTML = "";
+      resultsMeta.textContent = "—";
+      setStatus("Ready");
+      // keep weather card (it’s useful)
+    }
 
-      // walking = estimate + straight dashed line (no turn-by-turn)
-      if (travelMode === "walking") {
-        const km = haversineKm(myLocation.lat, myLocation.lon, destLat, destLon);
-        const mins = minutesForWalking(km);
-
-        routeSummaryEl.textContent = `${formatDistance(km)} • ~${mins} min (walking)`;
-        renderDirections([]); // hide directions for walking estimate
-
-        if (routeLine) routeLine.remove();
-        routeLine = L.polyline(
-          [[myLocation.lat, myLocation.lon], [destLat, destLon]],
-          { dashArray: "6 8" }
-        ).addTo(map);
-
+    function renderResults(){
+      if (!results.length){
+        resultsWrap.style.display = "none";
+        clearBtn.style.display = "none";
         return;
       }
 
-      // driving = OSRM with steps=true for turn-by-turn
-      routeSummaryEl.textContent = "Calculating…";
+      resultsWrap.style.display = "block";
+      clearBtn.style.display = "inline-flex";
+      resultsMeta.textContent = `${results.length} found`;
 
-      const url =
-        `https://router.project-osrm.org/route/v1/driving/` +
-        `${myLocation.lon},${myLocation.lat};${destLon},${destLat}` +
-        `?overview=full&geometries=geojson&steps=true`;
+      resultsList.innerHTML = results.map((x,i)=>{
+        const dist = myLocation ? formatDistanceMeters(haversineMeters(myLocation.lat, myLocation.lon, x.lat, x.lon)) : "";
+        const distHtml = myLocation ? ` · ${dist}` : "";
+        const addr = x.address ? `<div class="resMeta">${escapeHtml(x.address)}${escapeHtml(distHtml)}</div>` : (myLocation ? `<div class="resMeta">${escapeHtml(dist)}</div>` : "");
+        return `
+          <div class="res ${i===selectedIndex ? "selected":""}" data-idx="${i}">
+            <div class="resTitle">${escapeHtml(x.name || "Place")}</div>
+            ${addr}
+          </div>
+        `;
+      }).join("");
 
-      try {
+      resultsList.querySelectorAll("[data-idx]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const i = Number(el.getAttribute("data-idx"));
+          pickResult(i);
+        });
+      });
+    }
+
+    function renderMarkers(){
+      markersLayer.clearLayers();
+      const bounds = [];
+
+      results.forEach((x,i)=>{
+        bounds.push([x.lat, x.lon]);
+        const m = L.marker([x.lat, x.lon]).addTo(markersLayer);
+        m.on("click", ()=> pickResult(i));
+      });
+
+      if (bounds.length){
+        map.fitBounds(bounds, { padding:[30,30] });
+      }
+    }
+
+    function pickResult(i){
+      const x = results[i];
+      if (!x) return;
+      selectedIndex = i;
+      renderResults();
+      setDestination(x);
+    }
+
+    // =========================
+    // Distance math
+    // =========================
+    function haversineMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = (x) => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // =========================
+    // Weather
+    // =========================
+    async function updateWeather(lat, lon){
+      weatherCard.style.display = "block";
+      weatherCard.innerHTML = `
+        <div style="font-weight:800">Weather</div>
+        <div class="line"><span class="skeleton" style="display:inline-block;width:140px;height:14px"></span></div>
+        <div class="line"><span class="skeleton" style="display:inline-block;width:110px;height:12px"></span></div>
+      `;
+
+      try{
+        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+        const d = await r.json();
+        if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
+
+        const c = d.data.current;
+        const icon = weatherIcon(c.weather_code);
+
+        weatherCard.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-weight:900">Weather</div>
+            <div style="opacity:.9">${icon}</div>
+          </div>
+          <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
+          <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
+          <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
+        `;
+      } catch {
+        weatherCard.innerHTML = `
+          <div style="font-weight:800">Weather</div>
+          <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
+        `;
+      }
+    }
+
+    // =========================
+    // Destination + routing
+    // =========================
+    function setDestination(x, opts={}){
+      if (!x) return;
+
+      // if user clicks outside Athens, clamp destination inside bounds so map never “locks”
+      let dest = { ...x };
+      if (!inAthens(dest.lat, dest.lon)){
+        const c = clampToAthens(dest.lat, dest.lon);
+        dest.lat = c.lat; dest.lon = c.lon;
+        toast("Outside Athens", "Pinned outside the Athens area. Clamped inside bounds.", "info");
+      }
+
+      nav.dest = dest;
+
+      if (destMarker) destMarker.remove();
+      destMarker = L.marker([dest.lat, dest.lon]).addTo(map).bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
+
+      map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
+
+      // weather follows destination (more useful than random)
+      updateWeather(dest.lat, dest.lon);
+
+      // start routing if we have myLocation
+      if (myLocation){
+        startRoute();
+      } else {
+        // still show nav card only when we have route
+        stopNav(true);
+      }
+
+      // cache last destination
+      cacheUiState();
+    }
+
+    async function startRoute(){
+      if (!myLocation || !nav.dest) return;
+      nav.mode = modeSel.value || "walking";
+      setStatus("Calculating route…");
+
+      // skeleton nav card
+      navCard.style.display = "block";
+      navInstr.textContent = "Calculating route…";
+      navSub.innerHTML = `<span class="skeleton" style="display:inline-block;width:220px;height:12px"></span>`;
+
+      try{
+        const url =
+          `https://router.project-osrm.org/route/v1/${nav.mode}/` +
+          `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
+          `?overview=full&geometries=geojson&steps=true`;
+
         const r = await fetch(url);
         const j = await r.json();
-
         const route = j.routes?.[0];
-        const coords = route?.geometry?.coordinates;
+        if (!route) throw new Error("no route");
 
-        if (!coords) {
-          routeSummaryEl.textContent = "No route found.";
-          renderDirections([]);
-          if (routeLine) { routeLine.remove(); routeLine = null; }
-          return;
-        }
-
+        // line
+        const coords = route.geometry?.coordinates || [];
         const latlngs = coords.map(c => [c[1], c[0]]);
         if (routeLine) routeLine.remove();
         routeLine = L.polyline(latlngs).addTo(map);
 
-        const km = route.distance / 1000;
-        const mins = Math.max(1, Math.round(route.duration / 60));
-        routeSummaryEl.textContent = `${formatDistance(km)} • ~${mins} min (driving)`;
+        // steps
+        const leg = route.legs?.[0];
+        const steps = Array.isArray(leg?.steps) ? leg.steps : [];
+        nav.steps = steps.map(s => ({
+          distance: s.distance,
+          duration: s.duration,
+          name: s.name || "",
+          maneuver: s.maneuver || {},
+          instruction: buildInstruction(s)
+        }));
 
-        const steps = j.routes?.[0]?.legs?.[0]?.steps || [];
-        renderDirections(steps);
+        nav.stepIndex = 0;
+        nav.distanceM = route.distance;
+        nav.durationS = route.duration;
+
+        setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
+        showNavStep();
+
+        cacheUiState();
       } catch {
-        routeSummaryEl.textContent = "Route error.";
-        renderDirections([]);
+        setStatus("Route failed.");
+        toast("Route error", "Could not calculate route. Try again.", "bad");
+        stopNav(true);
       }
     }
 
-    // ---------- UI Render ----------
-    function renderMarkers(list) {
-      allMarkers.clearLayers();
-      const bounds = [];
+    function buildInstruction(step){
+      const m = step.maneuver || {};
+      // OSRM "straight" means continue (not a literal straight road) — we phrase it nicely:
+      const type = (m.type || "").toLowerCase();
+      const mod  = (m.modifier || "").toLowerCase();
+      const name = step.name ? ` onto ${step.name}` : "";
 
-      list.forEach((x) => {
-        bounds.push([x.lat, x.lon]);
-        const m = L.marker([x.lat, x.lon]).addTo(allMarkers);
-        m.on("click", () => pickResult(x, m));
-      });
+      if (type === "depart") return `Start${name}`;
+      if (type === "arrive") return `Arrive at destination`;
+      if (type === "roundabout") return `At roundabout, take exit${name}`;
+      if (type === "merge") return `Merge${name}`;
+      if (type === "on ramp") return `Take the ramp${name}`;
+      if (type === "off ramp") return `Exit the ramp${name}`;
 
-      if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
-    }
-
-    function renderTopList(list) {
-      top5 = list.slice(0, 5);
-
-      outEl.innerHTML =
-        `<b>Suggested matches:</b><br>` +
-        top5.map((x, i) => {
-          let dist = "";
-          if (myLocation) {
-            const km = haversineKm(myLocation.lat, myLocation.lon, x.lat, x.lon);
-            dist = ` <span style="opacity:.7">· ${formatDistance(km)}</span>`;
-          }
-
-          const addr = shouldShowAddress(x)
-            ? `<div style="opacity:.75; font-size:12px; margin-left:18px;">${escapeHtml(x.address)}</div>`
-            : "";
-
-          return `<div style="margin:6px 0">
-            <a href="#" data-top="${i}">${i + 1}. ${escapeHtml(x.name)}</a>${dist}
-            ${addr}
-          </div>`;
-        }).join("");
-
-      outEl.querySelectorAll("[data-top]").forEach(a => {
-        a.addEventListener("click", (e) => {
-          e.preventDefault();
-          const i = Number(a.getAttribute("data-top"));
-          pickResult(top5[i]);
-        });
-      });
-    }
-
-    function pickResult(x, markerLayer = null) {
-      if (!x) return;
-
-      lastPicked = x;
-      showMetaPanels();
-
-      map.setView([x.lat, x.lon], 16);
-      updateLocalTime(x.lat, x.lon);
-      updateWeather(x.lat, x.lon);
-
-      if (myLocation) drawRouteTo(x.lat, x.lon);
-      else {
-        routeBar.style.display = "none";
-        renderDirections([]);
+      if (type === "turn"){
+        if (mod) return `Turn ${mod}${name}`;
+        return `Turn${name}`;
       }
 
-      const osmLink = x.osmUrl || `https://www.openstreetmap.org/?mlat=${x.lat}&mlon=${x.lon}#map=18/${x.lat}/${x.lon}`;
-
-      let distHtml = "";
-      let dirHtml = "";
-
-      if (myLocation) {
-        const km = haversineKm(myLocation.lat, myLocation.lon, x.lat, x.lon);
-        distHtml = `<div style="opacity:.75; margin-top:4px;">📍 Distance: ${formatDistance(km)}</div>`;
-        dirHtml = `<div style="margin-top:6px;">
-          <a target="_blank" href="${googleDirectionsUrl(myLocation.lat, myLocation.lon, x.lat, x.lon)}">Directions (Google Maps)</a>
-        </div>`;
+      if (type === "continue" || type === "new name" || type === "straight"){
+        return `Continue${name}`;
       }
 
-      const addrHtml = shouldShowAddress(x)
-        ? `<div style="opacity:.85; margin-top:4px;">${escapeHtml(x.address)}</div>`
-        : "";
+      if (type === "fork"){
+        if (mod) return `Keep ${mod}${name}`;
+        return `Keep${name}`;
+      }
 
-      const popupHtml =
-        `<b>${escapeHtml(x.name || "Place")}</b>` +
-        addrHtml +
-        distHtml +
-        `<div style="margin-top:6px;">
-           <a target="_blank" href="${osmLink}">Open in OpenStreetMap</a><br>
-           <a target="_blank" href="${googleUrl(x.lat, x.lon)}">Open in Google Maps</a>
-         </div>` +
-        dirHtml;
-
-      if (markerLayer) markerLayer.bindPopup(popupHtml).openPopup();
+      return step.name ? `Go on ${step.name}` : "Continue";
     }
 
-    // ---------- Actions ----------
-    async function doSearch() {
-      const q = qEl.value.trim();
+    function showNavStep(){
+      if (!nav.steps.length){
+        stopNav(true);
+        return;
+      }
+      navCard.style.display = "block";
+
+      const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
+      nav.stepIndex = i;
+
+      const s = nav.steps[i];
+      navInstr.textContent = s.instruction;
+      navSub.textContent = `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · ~${formatDuration(s.duration)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
+
+      navPrev.disabled = (i === 0);
+      navNext.disabled = (i === nav.steps.length - 1);
+
+      if (nav.voiceOn) speak(s.instruction);
+
+      // keep selected step visible by centering map on the maneuver location if available
+      const loc = s.maneuver?.location;
+      if (Array.isArray(loc) && loc.length === 2){
+        map.panTo([loc[1], loc[0]], { animate:true });
+      }
+    }
+
+    function stopNav(keepCard=false){
+      nav.steps = [];
+      nav.stepIndex = 0;
+      nav.distanceM = null;
+      nav.durationS = null;
+      if (!keepCard) navCard.style.display = "none";
+    }
+
+    function speak(text){
+      try{
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "en-US";
+        window.speechSynthesis.speak(u);
+      } catch {}
+    }
+
+    // reroute if user moves significantly
+    let lastRerouteAt = 0;
+    function maybeReroute(){
+      if (!myLocation || !nav.dest) return;
+      const now = Date.now();
+      if (now - lastRerouteAt < 6000) return; // at most every 6s
+      lastRerouteAt = now;
+      startRoute();
+    }
+
+    // =========================
+    // Search + Nearby
+    // =========================
+    function showSearchSkeleton(){
+      resultsWrap.style.display = "block";
+      clearBtn.style.display = "inline-flex";
+      resultsMeta.textContent = "Searching…";
+      resultsList.innerHTML = Array.from({length:5}).map(()=>`
+        <div class="res">
+          <div class="skeleton" style="height:14px;width:70%"></div>
+          <div class="skeleton" style="height:12px;width:90%;margin-top:8px"></div>
+        </div>
+      `).join("");
+    }
+
+    async function doSearch(qOverride=null){
+      const q = (qOverride ?? qEl.value).trim();
       if (!q) return;
 
+      hideSuggest();
       saveRecent(q);
 
-      statusEl.textContent = "Searching…";
-      outEl.textContent = "";
-      if (routeLine) { routeLine.remove(); routeLine = null; }
-      routeBar.style.display = "none";
-      renderDirections([]);
+      setLoading(true, "Searching…");
+      setStatus("Searching…");
+      showSearchSkeleton();
 
-      let d;
-      try {
+      try{
         const r = await fetch("/where", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
           body: JSON.stringify({ q })
         });
-        d = await r.json();
+        const d = await r.json();
+
+        const list = Array.isArray(d?.results) ? d.results : [];
+        const filtered = list
+          .map(x => ({
+            name: x.name,
+            address: x.address,
+            lat: Number(x.lat),
+            lon: Number(x.lon),
+            osmUrl: x.osmUrl || ""
+          }))
+          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+          .filter(x => inAthens(x.lat, x.lon));
+
+        results = filtered;
+        selectedIndex = results.length ? 0 : -1;
+
+        if (!results.length){
+          setStatus("No results.");
+          toast("No results", "Try a different search or zoom area.", "info");
+          resultsWrap.style.display = "none";
+          clearBtn.style.display = "none";
+          markersLayer.clearLayers();
+          setLoading(false);
+          return;
+        }
+
+        setStatus(`Found ${results.length} results.`);
+        renderMarkers();
+        renderResults();
+        pickResult(0);
       } catch {
-        statusEl.textContent = "Network error.";
-        return;
+        setStatus("Network error.");
+        toast("Network error", "Could not reach the server. Try again.", "bad");
+      } finally {
+        setLoading(false);
       }
 
-      if (!d?.found || !Array.isArray(d.results) || !d.results.length) {
-        statusEl.textContent = "No results.";
-        allMarkers.clearLayers();
-        return;
-      }
-
-      results = d.results.filter(x => inAthens(Number(x.lat), Number(x.lon)));
-
-      if (!results.length) {
-        statusEl.textContent = "Results found, but outside Athens area.";
-        allMarkers.clearLayers();
-        return;
-      }
-
-      statusEl.textContent = `Found ${results.length} results.`;
-      renderMarkers(results);
-      renderTopList(results);
-      pickResult(results[0]);
+      cacheUiState();
     }
 
-    async function locateMe() {
-      if (!navigator.geolocation) {
-        alert("Your browser does not support location.");
+    async function nearMe(){
+      if (!myLocation){
+        toast("Need location", "Tap “My location” first.", "bad");
+        return;
+      }
+
+      hideSuggest();
+      setLoading(true, "Searching near you…");
+      setStatus("Searching near you…");
+      showSearchSkeleton();
+
+      try{
+        const cat = nearSel.value;
+        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
+        const d = await r.json();
+
+        const list = Array.isArray(d?.results) ? d.results : [];
+        const filtered = list
+          .map(x => ({
+            name: x.name,
+            address: x.address,
+            lat: Number(x.lat),
+            lon: Number(x.lon),
+            osmUrl: x.osmUrl || ""
+          }))
+          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+          .filter(x => inAthens(x.lat, x.lon));
+
+        results = filtered;
+        selectedIndex = results.length ? 0 : -1;
+
+        if (!results.length){
+          setStatus("Nothing found near you.");
+          toast("No nearby results", "Try a different category or move closer.", "info");
+          resultsWrap.style.display = "none";
+          clearBtn.style.display = "none";
+          markersLayer.clearLayers();
+          setLoading(false);
+          return;
+        }
+
+        setStatus(`Found ${results.length} nearby.`);
+        renderMarkers();
+        renderResults();
+        pickResult(0);
+      } catch {
+        setStatus("Network error.");
+        toast("Network error", "Could not fetch nearby places.", "bad");
+      } finally {
+        setLoading(false);
+      }
+
+      cacheUiState();
+    }
+
+    // =========================
+    // Location (fix “different country blocks map”)
+    // =========================
+    function locateMe(){
+      if (!navigator.geolocation){
+        toast("Unsupported", "Your browser does not support location.", "bad");
         return;
       }
 
@@ -738,173 +1150,159 @@
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
+          const rawLat = pos.coords.latitude;
+          const rawLon = pos.coords.longitude;
 
-          myLocation = { lat, lon };
+          const outside = !inAthens(rawLat, rawLon);
+          const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
+
+          myLocation = { lat: use.lat, lon: use.lon, rawOutside: outside, rawLat, rawLon };
 
           if (myMarker) myMarker.remove();
-          myMarker = L.circleMarker([lat, lon], { radius: 8 }).addTo(map)
-            .bindPopup("You are here").openPopup();
 
-          if (inAthens(lat, lon)) map.setView([lat, lon], 14);
-          else map.fitBounds(ATHENS_BOUNDS);
+          // If outside Athens, we still place the marker in Athens (clamped) to avoid “blocking”
+          myMarker = L.circleMarker([use.lat, use.lon], { radius: 8 }).addTo(map)
+            .bindPopup(outside ? "Your location is outside Athens (clamped inside Athens bounds)" : "You are here");
+
+          map.setView([use.lat, use.lon], 14);
 
           locBtn.disabled = false;
           locBtn.textContent = "My location";
 
-          if (results.length) renderTopList(results);
-          if (lastPicked && myLocation) {
-            routeBar.style.display = "block";
-            drawRouteTo(lastPicked.lat, lastPicked.lon);
+          if (outside){
+            toast("Outside Athens", "Your GPS is outside Athens. We kept you inside Athens area so the map never locks.", "info", 5200);
+          } else {
+            toast("Location set", "GPS acquired.", "ok");
           }
+
+          // If destination exists, route now
+          if (nav.dest) startRoute();
+
+          cacheUiState();
         },
         (err) => {
-          alert("Location error: " + err.message);
           locBtn.disabled = false;
           locBtn.textContent = "My location";
+          if (err?.code === 1){
+            toast("Location denied", "Allow location to use routing & near-me.", "bad", 5200);
+          } else {
+            toast("Location error", err?.message || "Could not get location.", "bad", 5200);
+          }
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
       );
     }
 
-    async function nearMe() {
-      if (!myLocation) {
-        alert("First allow location (My location).");
-        return;
-      }
-
-      statusEl.textContent = "Searching near you…";
-      outEl.textContent = "";
-      if (routeLine) { routeLine.remove(); routeLine = null; }
-      routeBar.style.display = "none";
-      renderDirections([]);
-
-      const cat = nearSel.value;
-
-      let d;
-      try {
-        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
-        d = await r.json();
-      } catch {
-        statusEl.textContent = "Network error.";
-        return;
-      }
-
-      if (!d?.found || !Array.isArray(d.results) || !d.results.length) {
-        statusEl.textContent = "Nothing found near you.";
-        allMarkers.clearLayers();
-        return;
-      }
-
-      results = d.results.filter(x => inAthens(Number(x.lat), Number(x.lon)));
-      if (!results.length) {
-        statusEl.textContent = "Nearby results exist, but outside Athens area.";
-        allMarkers.clearLayers();
-        return;
-      }
-
-      statusEl.textContent = `Found ${results.length} nearby.`;
-      renderMarkers(results);
-      renderTopList(results);
-      pickResult(results[0]);
-    }
-
-    // ---------- Collapse ----------
-    function setCollapsed(state) {
+    // =========================
+    // Panel collapse + Athens button
+    // =========================
+    function setCollapsed(state){
       collapsed = !!state;
-      topBody.style.display = collapsed ? "none" : "block";
-      toggleTopBtn.textContent = collapsed ? "▸" : "▾";
-      setTimeout(() => map.invalidateSize(), 50);
+      panelBody.style.display = collapsed ? "none" : "block";
+      togglePanelBtn.textContent = collapsed ? "▸" : "▾";
+      setTimeout(()=>map.invalidateSize(), 50);
     }
 
-    // ---------- Compass ----------
-    function setHeading(deg) {
-      needle.style.transform = `rotate(${deg}deg)`;
-      headingTextEl.textContent = `${Math.round(deg)}°`;
+    function goAthens(){
+      map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
+      toast("Athens", "Returned to Athens area.", "info");
     }
 
-    async function enableCompass() {
-      if (typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function") {
-        try {
-          const res = await DeviceOrientationEvent.requestPermission();
-          if (res !== "granted") throw new Error("permission denied");
-        } catch {
-          headingTextEl.textContent = "Permission denied";
-          return;
-        }
+    // =========================
+    // Cache UI (offline-ish)
+    // =========================
+    const UI_KEY = "cpya_ui_state";
+    function cacheUiState(){
+      try{
+        const state = {
+          q: qEl.value || "",
+          mode: modeSel.value || "walking",
+          lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
+          lastResults: results.slice(0, 20),
+          selectedIndex,
+        };
+        saveJson(UI_KEY, state);
+      } catch {}
+    }
+
+    function restoreUiState(){
+      const state = loadJson(UI_KEY, null);
+      if (!state) return;
+
+      if (state.q) qEl.value = state.q;
+      if (state.mode) modeSel.value = state.mode;
+
+      if (Array.isArray(state.lastResults) && state.lastResults.length){
+        results = state.lastResults
+          .map(x => ({ ...x, lat:Number(x.lat), lon:Number(x.lon) }))
+          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+        selectedIndex = Number.isFinite(state.selectedIndex) ? state.selectedIndex : -1;
+        renderMarkers();
+        renderResults();
       }
 
-      window.addEventListener("deviceorientation", (e) => {
-        if (typeof e.alpha === "number") setHeading(e.alpha);
-      }, true);
-
-      enableCompassBtn.style.display = "none";
+      if (state.lastDest && Number.isFinite(state.lastDest.lat) && Number.isFinite(state.lastDest.lon)){
+        nav.dest = { ...state.lastDest };
+        // don’t auto-route until location exists, but show weather
+        updateWeather(nav.dest.lat, nav.dest.lon);
+      }
     }
 
-    // ---------- Map click -> pin -> route ----------
-    map.on("click", (e) => {
-      const lat = e.latlng.lat;
-      const lon = e.latlng.lng;
-
-      if (clickPin) clickPin.remove();
-      clickPin = L.marker([lat, lon]).addTo(map).bindPopup("Pinned location").openPopup();
-
-      lastPicked = { lat, lon, name: "Pinned location", address: "" };
-
-      showMetaPanels();
-      updateLocalTime(lat, lon);
-      updateWeather(lat, lon);
-
-      if (myLocation) drawRouteTo(lat, lon);
-      else {
-        routeBar.style.display = "none";
-        renderDirections([]);
-        alert("Press 'My location' first to route.");
-      }
+    // =========================
+    // Navigation buttons
+    // =========================
+    navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
+    navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
+    navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
+    navVoice.addEventListener("click", ()=>{
+      nav.voiceOn = !nav.voiceOn;
+      navVoice.textContent = nav.voiceOn ? "🔈 Voice: On" : "🔈 Voice: Off";
+      toast("Voice", nav.voiceOn ? "Voice enabled." : "Voice disabled.", "info");
+      cacheUiState();
+    });
+    navCenter.addEventListener("click", ()=>{
+      if (myLocation) map.setView([myLocation.lat, myLocation.lon], 15);
+      else goAthens();
     });
 
-    // ---------- Init ----------
-    window.addEventListener("DOMContentLoaded", () => {
-      renderRecent();
-      setModeButtons();
+    // =========================
+    // Init
+    // =========================
+    window.addEventListener("DOMContentLoaded", ()=>{
+      renderChips();
+      restoreUiState();
 
-      btn.addEventListener("click", doSearch);
-      qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+      btn.addEventListener("click", ()=>doSearch());
+      qEl.addEventListener("keydown", (e)=>{
+        if (e.key === "Enter") doSearch();
+        else scheduleSuggest();
+      });
+      qEl.addEventListener("input", scheduleSuggest);
+      qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
 
       locBtn.addEventListener("click", locateMe);
       nearBtn.addEventListener("click", nearMe);
 
-      toggleTopBtn.addEventListener("click", () => setCollapsed(!collapsed));
+      athBtn.addEventListener("click", goAthens);
 
-      // Custom zoom buttons
-      document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
-      document.getElementById("zoomOut").addEventListener("click", () => map.zoomOut());
-
-      // Mode toggle
-      modeDriveBtn.addEventListener("click", () => {
-        travelMode = "driving";
-        setModeButtons();
-        if (lastPicked && myLocation) drawRouteTo(lastPicked.lat, lastPicked.lon);
+      clearBtn.addEventListener("click", ()=>{
+        clearAll();
+        toast("Cleared", "Results and route cleared.", "info");
       });
 
-      modeWalkBtn.addEventListener("click", () => {
-        travelMode = "walking";
-        setModeButtons();
-        if (lastPicked && myLocation) drawRouteTo(lastPicked.lat, lastPicked.lon);
+      modeSel.addEventListener("change", ()=>{
+        if (myLocation && nav.dest) startRoute();
+        cacheUiState();
       });
 
-      if (typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function") {
-        enableCompassBtn.style.display = "inline-block";
-        enableCompassBtn.addEventListener("click", enableCompass);
-      } else if ("DeviceOrientationEvent" in window) {
-        enableCompass();
-      } else {
-        headingTextEl.textContent = "Not supported";
-      }
+      togglePanelBtn.addEventListener("click", ()=> setCollapsed(!collapsed));
+
+      // whenever user moves (if they re-tap My location), reroute
+      // If you later implement watchPosition, call maybeReroute() in it.
     });
+
+    // expose reroute for later watchPosition upgrade
+    window.__cpya_reroute = maybeReroute;
   </script>
 </body>
 </html>
