@@ -276,7 +276,8 @@
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      bottom: calc(12px + var(--safe-bottom));
+      bottom: calc(140px + var(--safe-bottom));
+
       z-index: 1500;
       display:flex;
       overflow:hidden;
@@ -338,11 +339,29 @@
       padding: 10px 10px;
       outline:none;
     }
+.panelRestore{
+  position: fixed;
+  right: 12px;
+  top: calc(12px + var(--safe-top));
+  z-index: 2600;
+  display:none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(17,19,24,.92);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor:pointer;
+}
+.panelRestore.show{ display:block; }
+
 
     /* Leaflet: hide default zoom controls (we use pill) */
     .leaflet-control-zoom{ display:none !important; }
   </style>
 </head>
+<button id="panelRestore" class="panelRestore" type="button" aria-label="Open panel">☰</button>
 
 <body>
   <div id="splash">
@@ -591,10 +610,25 @@
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
     }[m]));
   }
-  function setLoading(on, text="Working…") {
-    loadingText.textContent = text;
-    loadingOverlay.style.display = on ? "flex" : "none";
+ let loadingShownAt = 0;
+const MIN_LOADING_MS = 1000;
+
+function setLoading(on, text="Working…") {
+  loadingText.textContent = text;
+
+  if (on) {
+    loadingShownAt = Date.now();
+    loadingOverlay.style.display = "flex";
+    return;
   }
+
+  const elapsed = Date.now() - loadingShownAt;
+  const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+
+  setTimeout(() => {
+    loadingOverlay.style.display = "none";
+  }, wait);
+}
   function toast(title, msg, type="info", ms=3200) {
     const el = document.createElement("div");
     el.className = `toast ${type}`;
@@ -902,7 +936,14 @@
       }
       return arr[0] || null;
     };
-    return pickFrom(greek) || pickFrom(cachedVoices) || null;
+    // Prefer “natural/neural” if available
+const preferNatural = (arr) => {
+  const n = arr.find(v => /natural|neural/i.test(v.name || ""));
+  return n || null;
+};
+
+return preferNatural(greek) || pickFrom(greek) || preferNatural(cachedVoices) || pickFrom(cachedVoices) || null;
+
   }
   function speak(text){
     try{
@@ -914,9 +955,10 @@
         u.voice = voice;
         u.lang = voice.lang || "en-US";
       }
-      u.rate = 1.02;
-      u.pitch = 1.12;
-      u.volume = 0.95;
+      u.rate = 0.95;   // slower, more natural
+u.pitch = 1.06;  // less “cartoon”
+u.volume = 0.92; // slightly softer
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch {}
@@ -1508,6 +1550,8 @@
     panelToggleBtn.textContent = panelOpen ? "▾" : "▸";
     setTimeout(()=>map.invalidateSize(), 80);
   }
+const panelRestore = document.getElementById("panelRestore");
+
 
   function initPanelDrag(){
     let startY = 0;
@@ -1791,6 +1835,8 @@
   });
 
   panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
+panelRestore.addEventListener("click", ()=> setPanelOpen(true));
+
 
   navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
   navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
