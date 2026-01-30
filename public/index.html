@@ -271,14 +271,13 @@
       }
     }
 
-    /* Custom zoom pill */
+    /* Custom zoom pill (always above nav/weather/panel) */
     #zoomPill{
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      bottom: calc(140px + var(--safe-bottom));
-
-      z-index: 1500;
+      bottom: calc(22px + var(--safe-bottom));
+      z-index: 1600;
       display:flex;
       overflow:hidden;
       border-radius: 999px;
@@ -298,6 +297,23 @@
     }
     .zoomBtn:hover{ background: rgba(255,255,255,.08); }
     .zoomSep{ width: 1px; background: rgba(255,255,255,.12); }
+
+    /* Panel restore button (shows only when panel closed) */
+    #panelRestore{
+      position: fixed;
+      right: 12px;
+      top: calc(12px + var(--safe-top));
+      z-index: 99999;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(17,19,24,.92);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      display:none;
+    }
+    #panelRestore:hover{ background: rgba(255,255,255,.10); }
 
     /* Modal */
     #modal{
@@ -339,31 +355,16 @@
       padding: 10px 10px;
       outline:none;
     }
-.panelRestore{
-  position: fixed;
-  right: 12px;
-  top: calc(12px + var(--safe-top));
-  z-index: 2600;
-  display:none;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(17,19,24,.92);
-  color: var(--text);
-  box-shadow: var(--shadow);
-  cursor:pointer;
-}
-.panelRestore.show{ display:block; }
-
 
     /* Leaflet: hide default zoom controls (we use pill) */
     .leaflet-control-zoom{ display:none !important; }
   </style>
 </head>
-<button id="panelRestore" class="panelRestore" type="button" aria-label="Open panel">☰</button>
 
 <body>
+  <!-- Restore button MUST be inside body -->
+  <button id="panelRestore" type="button" aria-label="Open panel">☰ Panel</button>
+
   <div id="splash">
     <div id="splashInner">
       <div id="splashLogo">
@@ -404,7 +405,7 @@
       <button class="btn slim primary" id="navNext" title="Next step">▶</button>
       <button class="btn slim" id="navVoice">🔈 Voice: Off</button>
       <button class="btn slim" id="navFollow">🧭 Follow: On</button>
-      <button class="btn slim" id="navCenter">📍 Center</button>
+      <button class="btn slim" id="navCenter">📍 Me</button>
     </div>
   </div>
 
@@ -532,6 +533,7 @@
 
   const panel = document.getElementById("panel");
   const panelHandle = document.getElementById("panelHandle");
+  const panelRestore = document.getElementById("panelRestore");
   const offlineHint = document.getElementById("offlineHint");
 
   const modal = document.getElementById("modal");
@@ -574,7 +576,7 @@
   let myArrow = null;
 
   // Storage keys
-  const SAVED_KEY = "athnav_saved_v13"; // saved places model
+  const SAVED_KEY = "athnav_saved_v13";
   const RECENT_KEY = "athnav_recent_v13";
   const UI_KEY = "athnav_ui_v13";
   const LAST_RESULTS_KEY = "athnav_last_results_v13";
@@ -583,7 +585,7 @@
   let results = [];
   let selectedIndex = -1;
 
-  let myLocation = null; // {lat, lon, bearingDeg, lastUpdate, lastRerouteAt}
+  let myLocation = null;
   let trackingOn = true;
   let followOn = true;
   let watchId = null;
@@ -595,13 +597,10 @@
     stepIndex: 0,
     distanceM: null,
     durationS: null,
-    voiceStyle: "off" // off | soft
+    voiceStyle: "off"
   };
 
-  // For saving via map click
-  let armSave = null; // {type:"fixed", key} | {type:"custom", name}
-
-  // Panel open state
+  let armSave = null;
   let panelOpen = true;
 
   // Utils
@@ -610,25 +609,22 @@
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
     }[m]));
   }
- let loadingShownAt = 0;
-const MIN_LOADING_MS = 1000;
 
-function setLoading(on, text="Working…") {
-  loadingText.textContent = text;
-
-  if (on) {
-    loadingShownAt = Date.now();
-    loadingOverlay.style.display = "flex";
-    return;
+  // Loading: minimum visible time
+  let loadingShownAt = 0;
+  const MIN_LOADING_MS = 450;
+  function setLoading(on, text="Working…") {
+    loadingText.textContent = text;
+    if (on) {
+      loadingShownAt = Date.now();
+      loadingOverlay.style.display = "flex";
+      return;
+    }
+    const elapsed = Date.now() - loadingShownAt;
+    const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+    setTimeout(() => { loadingOverlay.style.display = "none"; }, wait);
   }
 
-  const elapsed = Date.now() - loadingShownAt;
-  const wait = Math.max(0, MIN_LOADING_MS - elapsed);
-
-  setTimeout(() => {
-    loadingOverlay.style.display = "none";
-  }, wait);
-}
   function toast(title, msg, type="info", ms=3200) {
     const el = document.createElement("div");
     el.className = `toast ${type}`;
@@ -916,7 +912,7 @@ function setLoading(on, text="Working…") {
     });
   }
 
-  // Voice
+  // Voice (still depends on browser voices; we just make it less terrible)
   let cachedVoices = [];
   function refreshVoices(){
     cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
@@ -925,46 +921,39 @@ function setLoading(on, text="Working…") {
     refreshVoices();
     speechSynthesis.onvoiceschanged = refreshVoices;
   }
-  function pickVoicePreferFemale(){
+  function pickBestVoice(){
     if (!cachedVoices.length) refreshVoices();
     const greek = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
-    const femaleHints = ["female","woman","maria","eleni","anna","zira","siri","karen","google","helena"];
-    const pickFrom = (arr) => {
-      for (const hint of femaleHints){
-        const found = arr.find(v => (v.name || "").toLowerCase().includes(hint));
-        if (found) return found;
-      }
-      return arr[0] || null;
+    const bestScore = (v) => {
+      const name = (v.name || "").toLowerCase();
+      let s = 0;
+      if (/natural|neural/.test(name)) s += 4;
+      if (/google|microsoft|apple/.test(name)) s += 2;
+      if (/siri/.test(name)) s += 1;
+      return s;
     };
-    // Prefer “natural/neural” if available
-const preferNatural = (arr) => {
-  const n = arr.find(v => /natural|neural/i.test(v.name || ""));
-  return n || null;
-};
-
-return preferNatural(greek) || pickFrom(greek) || preferNatural(cachedVoices) || pickFrom(cachedVoices) || null;
-
+    const pick = (arr) => arr.slice().sort((a,b)=> bestScore(b)-bestScore(a))[0] || null;
+    return pick(greek) || pick(cachedVoices) || null;
   }
   function speak(text){
     try{
       if (nav.voiceStyle === "off") return;
       if (!("speechSynthesis" in window)) return;
-      const voice = pickVoicePreferFemale();
+      const voice = pickBestVoice();
       const u = new SpeechSynthesisUtterance(String(text));
       if (voice){
         u.voice = voice;
         u.lang = voice.lang || "en-US";
       }
-      u.rate = 0.95;   // slower, more natural
-u.pitch = 1.06;  // less “cartoon”
-u.volume = 0.92; // slightly softer
-
+      u.rate = 0.95;
+      u.pitch = 1.02;
+      u.volume = 0.9;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch {}
   }
   function updateVoiceBtn(){
-    navVoice.textContent = nav.voiceStyle === "off" ? "🔈 Voice: Off" : "🔈 Voice: Soft";
+    navVoice.textContent = nav.voiceStyle === "off" ? "🔈 Voice: Off" : "🔈 Voice: On";
   }
 
   // Weather
@@ -1491,7 +1480,6 @@ u.volume = 0.92; // slightly softer
     else stopTracking();
   }
 
-  // Some browsers require a user gesture for GPS
   let trackingArmed = true;
   function armTrackingOnce(){
     if (!trackingArmed) return;
@@ -1499,26 +1487,6 @@ u.volume = 0.92; // slightly softer
     if (trackingOn) startTracking();
     window.removeEventListener("pointerdown", armTrackingOnce, true);
   }
-
-  // Map click
-  map.on("click", (e) => {
-    const { lat, lng } = e.latlng;
-
-    if (armSave){
-      if (armSave.type === "fixed"){
-        setFixedPlace(armSave.key, lat, lng);
-        toast("Saved", `${armSave.key} updated.`, "ok");
-      } else if (armSave.type === "custom"){
-        addCustomPlace(armSave.name, lat, lng);
-        toast("Saved", `"${armSave.name}" added.`, "ok");
-      }
-      armSave = null;
-      return;
-    }
-
-    setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
-    toast("Pinned", "Destination pinned. Calculating route…", "info");
-  });
 
   // Clear
   function clearAll(){
@@ -1537,7 +1505,7 @@ u.volume = 0.92; // slightly softer
     cacheUiState();
   }
 
-  // Panel slide
+  // Panel open/close + restore button visibility
   function setPanelOpen(open){
     panelOpen = !!open;
 
@@ -1548,10 +1516,10 @@ u.volume = 0.92; // slightly softer
     }
 
     panelToggleBtn.textContent = panelOpen ? "▾" : "▸";
+    panelRestore.style.display = panelOpen ? "none" : "block";
+
     setTimeout(()=>map.invalidateSize(), 80);
   }
-const panelRestore = document.getElementById("panelRestore");
-
 
   function initPanelDrag(){
     let startY = 0;
@@ -1779,6 +1747,26 @@ const panelRestore = document.getElementById("panelRestore");
     }
   }
 
+  // Map click
+  map.on("click", (e) => {
+    const { lat, lng } = e.latlng;
+
+    if (armSave){
+      if (armSave.type === "fixed"){
+        setFixedPlace(armSave.key, lat, lng);
+        toast("Saved", `${armSave.key} updated.`, "ok");
+      } else if (armSave.type === "custom"){
+        addCustomPlace(armSave.name, lat, lng);
+        toast("Saved", `"${armSave.name}" added.`, "ok");
+      }
+      armSave = null;
+      return;
+    }
+
+    setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
+    toast("Pinned", "Destination pinned. Calculating route…", "info");
+  });
+
   // Buttons wiring
   btn.addEventListener("click", ()=>doSearch());
   qEl.addEventListener("keydown", (e)=>{
@@ -1789,7 +1777,56 @@ const panelRestore = document.getElementById("panelRestore");
   qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
 
   nearBtn.addEventListener("click", nearMe);
+  savedBtn.addEventListener("click", renderSavedManager);
 
+  trackBtn.addEventListener("click", ()=>{
+    trackingOn = !trackingOn;
+    applyTrackingDesiredState();
+    toast("Tracking", trackingOn ? "Live tracking enabled." : "Live tracking disabled.", "info");
+    cacheUiState();
+  });
+
+  clearBtn.addEventListener("click", ()=>{
+    clearAll();
+    toast("Cleared", "Results and route cleared.", "info");
+  });
+
+  modeSel.addEventListener("change", ()=>{
+    if (myLocation && nav.dest) startRoute();
+    cacheUiState();
+  });
+
+  panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
+  panelRestore.addEventListener("click", ()=> setPanelOpen(true));
+
+  navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
+  navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
+  navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
+
+  navVoice.addEventListener("click", ()=>{
+    nav.voiceStyle = (nav.voiceStyle === "off") ? "on" : "off";
+    updateVoiceBtn();
+    toast("Voice", nav.voiceStyle === "off" ? "Voice disabled." : "Voice enabled (browser voice).", "info");
+    cacheUiState();
+  });
+
+  navFollowBtn.addEventListener("click", ()=>{
+    followOn = !followOn;
+    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
+    toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
+    cacheUiState();
+  });
+
+  // "Me" button: center on your GPS, else toast
+  navCenter.addEventListener("click", ()=>{
+    if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
+    else toast("No location yet", "Tap My location first.", "info");
+  });
+
+  zoomInBtn.addEventListener("click", ()=> map.zoomIn());
+  zoomOutBtn.addEventListener("click", ()=> map.zoomOut());
+
+  // My Location button
   myLocBtn.addEventListener("click", ()=>{
     if (trackingOn && myLocation) {
       map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
@@ -1814,56 +1851,6 @@ const panelRestore = document.getElementById("panelRestore");
       { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
     );
   });
-
-  savedBtn.addEventListener("click", renderSavedManager);
-
-  trackBtn.addEventListener("click", ()=>{
-    trackingOn = !trackingOn;
-    applyTrackingDesiredState();
-    toast("Tracking", trackingOn ? "Live tracking enabled." : "Live tracking disabled.", "info");
-    cacheUiState();
-  });
-
-  clearBtn.addEventListener("click", ()=>{
-    clearAll();
-    toast("Cleared", "Results and route cleared.", "info");
-  });
-
-  modeSel.addEventListener("change", ()=>{
-    if (myLocation && nav.dest) startRoute();
-    cacheUiState();
-  });
-
-  panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
-panelRestore.addEventListener("click", ()=> setPanelOpen(true));
-
-
-  navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
-  navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
-  navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
-
-  navVoice.addEventListener("click", ()=>{
-    nav.voiceStyle = (nav.voiceStyle === "off") ? "soft" : "off";
-    updateVoiceBtn();
-    toast("Voice", nav.voiceStyle === "off" ? "Voice disabled." : "Soft voice enabled.", "info");
-    cacheUiState();
-  });
-
-  navFollowBtn.addEventListener("click", ()=>{
-    followOn = !followOn;
-    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
-    toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
-    cacheUiState();
-  });
-
-  navCenter.addEventListener("click", ()=>{
-    if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-    else if (nav.dest) map.setView([nav.dest.lat, nav.dest.lon], Math.max(map.getZoom(), 15));
-    else map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
-  });
-
-  zoomInBtn.addEventListener("click", ()=> map.zoomIn());
-  zoomOutBtn.addEventListener("click", ()=> map.zoomOut());
 
   // Init
   window.addEventListener("DOMContentLoaded", async ()=>{
