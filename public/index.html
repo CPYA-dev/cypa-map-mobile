@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>CPYA Map (Athens)</title>
+  <title>CPYA Map (Athens) — v1.1</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,10 +26,10 @@
       --safe-top: env(safe-area-inset-top, 0px);
     }
     html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #07080b; color: var(--text); }
-    #app { height: 100%; display:flex; flex-direction:column; }
+    #app { height: 100%; display:flex; flex-direction:column; position:relative; }
 
     /* Map */
-    #map { flex: 1; width: 100%; }
+    #map { flex: 1; width: 100%; height: 100%; }
 
     /* Floating system */
     .card{
@@ -40,10 +40,10 @@
       backdrop-filter: blur(10px);
     }
 
-    /* Top / Bottom sheet container */
+    /* Panel container (desktop default is "top"; overridden below for desktop right-side) */
     #panel {
       position: relative;
-      z-index: 1000;
+      z-index: 2000;
       background: rgba(8,10,14,.75);
       border-bottom: 1px solid var(--line);
       padding: calc(10px + var(--safe-top)) 12px 10px;
@@ -153,7 +153,7 @@
       left: 12px;
       right: 12px;
       display:none;
-      z-index: 1200;
+      z-index: 2200;
       border-radius: 16px;
       overflow:hidden;
     }
@@ -167,7 +167,53 @@
     #suggestBox .item:hover{ background: rgba(255,255,255,.06); }
     #suggestBox .item .sub{ font-size:12px; color: var(--muted); margin-top:3px; }
 
-    /* Loading overlay + skeletons */
+    /* Saved places menu (More) */
+    #savedMenu{
+      position:absolute;
+      top: calc(12px + var(--safe-top) + 96px);
+      left: 12px;
+      right: 12px;
+      display:none;
+      z-index: 2300;
+      overflow:hidden;
+      border-radius: 16px;
+    }
+    .menuItem{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(17,19,24,.96);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .menuItem:last-child{ border-bottom:none; }
+    .menuItem .left{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width: 0;
+    }
+    .menuItem .title{ font-weight: 800; font-size: 13px; }
+    .menuItem .sub{ font-size: 12px; color: var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 240px; }
+    .menuItem .actions{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+    .miniBtn{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .miniBtn:hover{ background: rgba(255,255,255,.10); }
+    .miniBtn.danger{ border-color: rgba(255,77,77,.35); background: rgba(255,77,77,.10); }
+
+    /* Loading overlay */
     #loadingOverlay{
       position: fixed;
       inset: 0;
@@ -267,7 +313,7 @@
       padding: 10px 12px;
       border-radius: 18px;
       display:none;
-      width: min(520px, 92vw);
+      width: min(560px, 92vw);
     }
     #navTop{
       display:flex;
@@ -294,11 +340,7 @@
       margin-top: 10px;
     }
 
-    /* Mini menu */
-    #menuRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    #modeSel{ min-width: 140px; }
-
-    /* Mobile: turn top into bottom sheet */
+    /* Mobile: panel becomes bottom sheet */
     @media (max-width: 720px){
       #panel{
         position: fixed;
@@ -326,9 +368,39 @@
         top: auto;
         bottom: calc(10px + var(--safe-bottom) + 110px);
       }
+      #savedMenu{
+        top: auto;
+        bottom: calc(10px + var(--safe-bottom) + 160px);
+      }
       /* avoid overlapping with bottom sheet */
       #weatherCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
       #navCard{ bottom: calc(12px + var(--safe-bottom) + 220px); }
+    }
+
+    /* Desktop: panel on the RIGHT (PC only) */
+    @media (min-width: 721px){
+      #panel{
+        position: fixed;
+        top: calc(12px + var(--safe-top));
+        right: 12px;
+        left: auto;
+        width: 380px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius2);
+        background: rgba(8,10,14,.80);
+        padding: 12px;
+      }
+      #panelHandle{ display:none; }
+      #suggestBox{
+        top: 62px;
+        left: 12px;
+        right: 12px;
+      }
+      #savedMenu{
+        top: 118px;
+        left: 12px;
+        right: 12px;
+      }
     }
   </style>
 </head>
@@ -369,14 +441,14 @@
       <div id="panelHandle"></div>
 
       <div id="panelInner">
-        <input id="q" class="input" placeholder='Search: "lidl" / "ok market marousi"' autocomplete="off" />
+        <input id="q" class="input" placeholder='Search…' autocomplete="off" />
         <button id="btn" class="btn primary" type="button">Find</button>
         <button id="locBtn" class="btn" type="button">My location</button>
-        <button id="athBtn" class="btn" type="button" title="Return to Athens">Athens</button>
         <button id="togglePanel" class="btn" type="button" title="Collapse/expand">▾</button>
       </div>
 
       <div id="suggestBox" class="card"></div>
+      <div id="savedMenu" class="card"></div>
 
       <div id="panelBody">
         <div class="row" id="menuRow">
@@ -414,10 +486,8 @@
 
   <script>
     // =========================
-    // Athens bounds (slightly larger + softer clamp)
+    // Athens bounds
     // =========================
-    // Original: west 23.65 south 37.85 east 24.05 north 38.10
-    // Expanded (~1.5x feel): allow Piraeus + outskirts more naturally
     const ATHENS_BBOX = { west: 23.45, south: 37.75, east: 24.25, north: 38.20 };
 
     const ATHENS_BOUNDS = L.latLngBounds(
@@ -442,7 +512,6 @@
     const qEl = document.getElementById("q");
     const btn = document.getElementById("btn");
     const locBtn = document.getElementById("locBtn");
-    const athBtn = document.getElementById("athBtn");
     const togglePanelBtn = document.getElementById("togglePanel");
     const panelBody = document.getElementById("panelBody");
 
@@ -459,6 +528,7 @@
     const clearBtn = document.getElementById("clearBtn");
 
     const suggestBox = document.getElementById("suggestBox");
+    const savedMenu = document.getElementById("savedMenu");
 
     const loadingOverlay = document.getElementById("loadingOverlay");
     const loadingText = document.getElementById("loadingText");
@@ -476,14 +546,29 @@
     const navCenter = document.getElementById("navCenter");
 
     // =========================
+    // Random placeholder examples
+    // =========================
+    const PLACEHOLDERS = [
+      'Search: "lidl" / "pharmacy neapoli"',
+      'Search: "coffee" / "souvlaki pangrati"',
+      'Search: "supermarket" / "metro station"',
+      'Search: "ΚΤΕΛ" / "πανεπιστήμιο"',
+      'Search: "gym" / "hospital"',
+      'Search: "bakery" / "piraeus port"'
+    ];
+    function setRandomPlaceholder(){
+      const pick = PLACEHOLDERS[Math.floor(Math.random()*PLACEHOLDERS.length)];
+      qEl.placeholder = pick;
+    }
+
+    // =========================
     // Map
     // =========================
     const map = L.map("map", {
       maxBounds: ATHENS_BOUNDS,
-      maxBoundsViscosity: 0.65 // softer = less “blocked” feeling
+      maxBoundsViscosity: 0.65
     }).fitBounds(ATHENS_BOUNDS);
 
-    // keep zoom reasonable
     map.setMinZoom(map.getZoom() - 2);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
@@ -492,13 +577,6 @@
     let myMarker = null;
     let destMarker = null;
     let routeLine = null;
-
-    // click-to-route: drop pin + route
-    map.on("click", (e) => {
-      const { lat, lng } = e.latlng;
-      setDestination({ lat, lon: lng, name: "Pinned location", address: "" }, { fromMapClick: true });
-      toast("Pinned", "Destination pinned. Calculating route…", "info");
-    });
 
     // =========================
     // State
@@ -509,7 +587,6 @@
     let results = [];
     let selectedIndex = -1;
 
-    // Navigation steps
     let nav = {
       mode: "walking",
       dest: null,
@@ -517,8 +594,12 @@
       stepIndex: 0,
       distanceM: null,
       durationS: null,
+      durationSource: null,
       voiceOn: false
     };
+
+    // Saved place "arming": user clicks Set Home then clicks map
+    let armSaveKey = null; // "home" | "school" | "work" | "custom"
 
     // =========================
     // Utils
@@ -544,18 +625,6 @@
       return `${h} h ${rem} min`;
     }
 
-    function weatherIcon(code) {
-      code = Number(code);
-      if (code === 0) return "☀️";
-      if (code <= 2) return "⛅";
-      if (code === 3) return "☁️";
-      if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
-      if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
-      if (code === 45 || code === 48) return "🌫️";
-      if (code >= 95) return "⛈️";
-      return "🌦️";
-    }
-
     function setLoading(on, text="Working…"){
       loadingText.textContent = text;
       loadingOverlay.style.display = on ? "flex" : "none";
@@ -578,11 +647,31 @@
 
     function setStatus(s){ statusEl.textContent = s; }
 
+    // Distance math
+    function haversineMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = (x) => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
     // =========================
-    // Recents + Saved places
+    // Saved Places (Home/School/Work/Custom + More menu)
     // =========================
-    const RECENT_KEY = "cpya_recent_searches";
-    const SAVED_KEY  = "cpya_saved_places"; // {home:{lat,lon,label}, school:{...}}
+    const SAVED_KEY  = "cpya_saved_places_v11";
+    const RECENT_KEY = "cpya_recent_searches_v11";
+
+    const SAVED_SLOTS = [
+      { key:"home",   label:"Home",   icon:"🏠" },
+      { key:"school", label:"School", icon:"🎓" },
+      { key:"work",   label:"Work",   icon:"💼" },
+      { key:"custom", label:"Custom", icon:"⭐" }
+    ];
 
     function loadJson(key, fallback){
       try{ const v = JSON.parse(localStorage.getItem(key) || ""); return v ?? fallback; }
@@ -592,6 +681,107 @@
       localStorage.setItem(key, JSON.stringify(value));
     }
 
+    function loadSaved(){
+      const o = loadJson(SAVED_KEY, {});
+      return (o && typeof o === "object") ? o : {};
+    }
+    function saveSaved(o){
+      saveJson(SAVED_KEY, o);
+      renderChips();
+      renderSavedMenu(); // keep in sync if open
+    }
+
+    function setSavedPlace(key, lat, lon){
+      const saved = loadSaved();
+      saved[key] = { lat, lon, updatedAt: Date.now() };
+      saveSaved(saved);
+    }
+
+    function clearSavedPlace(key){
+      const saved = loadSaved();
+      delete saved[key];
+      saveSaved(saved);
+    }
+
+    function formatCoord(lat, lon){
+      return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+
+    function toggleSavedMenu(force){
+      const show = (typeof force === "boolean") ? force : (savedMenu.style.display !== "block");
+      if (show){
+        hideSuggest();
+        renderSavedMenu();
+        savedMenu.style.display = "block";
+      } else {
+        savedMenu.style.display = "none";
+      }
+    }
+
+    function renderSavedMenu(){
+      const saved = loadSaved();
+      savedMenu.innerHTML = SAVED_SLOTS.map(slot=>{
+        const p = saved[slot.key];
+        const has = p && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+
+        const sub = has ? `Saved at ${formatCoord(p.lat, p.lon)}` : "Not set";
+        const goBtn = has ? `<button class="miniBtn" data-go="${slot.key}">Go</button>` : "";
+        const setBtn = `<button class="miniBtn" data-set="${slot.key}">Set</button>`;
+        const clrBtn = has ? `<button class="miniBtn danger" data-clr="${slot.key}">Clear</button>` : "";
+
+        return `
+          <div class="menuItem">
+            <div class="left">
+              <div class="title">${slot.icon} ${escapeHtml(slot.label)}</div>
+              <div class="sub">${escapeHtml(sub)}</div>
+            </div>
+            <div class="actions">
+              ${goBtn}
+              ${setBtn}
+              ${clrBtn}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      savedMenu.querySelectorAll("[data-go]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const key = btn.getAttribute("data-go");
+          const saved = loadSaved();
+          const p = saved[key];
+          if (!p) return;
+          setDestination({ lat:p.lat, lon:p.lon, name: key, address:"" });
+          toggleSavedMenu(false);
+        });
+      });
+
+      savedMenu.querySelectorAll("[data-set]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const key = btn.getAttribute("data-set");
+          armSaveKey = key;
+
+          // If user already selected a destination (from search), we can set immediately
+          if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+            setSavedPlace(key, nav.dest.lat, nav.dest.lon);
+            toast("Saved", `${key} saved from selected destination.`, "ok");
+            armSaveKey = null;
+            return;
+          }
+
+          toast("Set place", `Now tap the map to set ${key}.`, "info", 5200);
+        });
+      });
+
+      savedMenu.querySelectorAll("[data-clr]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const key = btn.getAttribute("data-clr");
+          clearSavedPlace(key);
+          toast("Cleared", `${key} cleared.`, "info");
+        });
+      });
+    }
+
+    // Recents
     function loadRecent(){
       const arr = loadJson(RECENT_KEY, []);
       return Array.isArray(arr) ? arr : [];
@@ -603,28 +793,24 @@
       renderChips();
     }
 
-    function loadSaved(){
-      const o = loadJson(SAVED_KEY, {});
-      return (o && typeof o === "object") ? o : {};
-    }
-    function saveSaved(o){ saveJson(SAVED_KEY, o); renderChips(); }
-
     function renderChips(){
       const rec = loadRecent();
       const saved = loadSaved();
 
+      const homeSet = !!saved.home;
+      const schoolSet = !!saved.school;
+
       const parts = [];
 
-      // saved places
-      if (saved.home) parts.push(`<span class="pill" data-saved="home">🏠 Home</span>`);
-      else parts.push(`<span class="pill" data-set="home">+ Set Home</span>`);
+      // Home + School pills
+      parts.push(`<span class="pill" data-slot="home">${homeSet ? "🏠 Home" : "+ Set Home"}</span>`);
+      parts.push(`<span class="pill" data-slot="school">${schoolSet ? "🎓 School" : "+ Set School"}</span>`);
 
-      if (saved.school) parts.push(`<span class="pill" data-saved="school">🎓 School</span>`);
-      else parts.push(`<span class="pill" data-set="school">+ Set School</span>`);
+      // More menu pill
+      parts.push(`<span class="pill" data-more="1">More ▾</span>`);
 
       // recents
       rec.slice(0,6).forEach((s,i) => parts.push(`<span class="pill" data-recent="${i}">${escapeHtml(s)}</span>`));
-
       chipsEl.innerHTML = parts.join("");
 
       chipsEl.querySelectorAll("[data-recent]").forEach(el=>{
@@ -636,35 +822,321 @@
         });
       });
 
-      chipsEl.querySelectorAll("[data-set]").forEach(el=>{
-        el.addEventListener("click", ()=>{
-          const key = el.getAttribute("data-set"); // home/school
-          if (!myLocation){
-            toast("Need location", "Tap “My location” first, then set this place.", "bad");
-            return;
-          }
-          const savedNow = loadSaved();
-          savedNow[key] = { lat: myLocation.lat, lon: myLocation.lon, label: key };
-          saveSaved(savedNow);
-          toast("Saved", `${key === "home" ? "Home" : "School"} saved to your current location.`, "ok");
-        });
+      chipsEl.querySelectorAll("[data-more]").forEach(el=>{
+        el.addEventListener("click", ()=> toggleSavedMenu() );
       });
 
-      chipsEl.querySelectorAll("[data-saved]").forEach(el=>{
+      chipsEl.querySelectorAll("[data-slot]").forEach(el=>{
         el.addEventListener("click", ()=>{
-          const key = el.getAttribute("data-saved");
-          const savedNow = loadSaved();
-          const p = savedNow[key];
-          if (!p) return;
-          setDestination({ lat: p.lat, lon: p.lon, name: key === "home" ? "Home" : "School", address:"" });
+          const key = el.getAttribute("data-slot");
+          const saved = loadSaved();
+          const p = saved[key];
+
+          if (p){
+            setDestination({ lat:p.lat, lon:p.lon, name: key, address:"" });
+            return;
+          }
+
+          // Not set -> arm map click (or use selected destination)
+          armSaveKey = key;
+
+          if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+            setSavedPlace(key, nav.dest.lat, nav.dest.lon);
+            toast("Saved", `${key} saved from selected destination.`, "ok");
+            armSaveKey = null;
+            return;
+          }
+
+          toast("Set place", `Now tap the map to set ${key}.`, "info", 5200);
         });
       });
     }
 
+    // Hide menus on outside interactions
+    function hideSuggest(){ suggestBox.style.display="none"; }
+    function hideSavedMenu(){ savedMenu.style.display="none"; }
+
+    document.addEventListener("click", (e)=>{
+      // close saved menu if clicking outside panel/menu button
+      const withinPanel = e.target.closest("#panel");
+      if (!withinPanel){
+        hideSuggest();
+        hideSavedMenu();
+      }
+    });
+
     // =========================
-    // Suggestions (debounced)
+    // Weather (unchanged logic)
+    // =========================
+    function weatherIcon(code) {
+      code = Number(code);
+      if (code === 0) return "☀️";
+      if (code <= 2) return "⛅";
+      if (code === 3) return "☁️";
+      if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
+      if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
+      if (code === 45 || code === 48) return "🌫️";
+      if (code >= 95) return "⛈️";
+      return "🌦️";
+    }
+
+    async function updateWeather(lat, lon){
+      weatherCard.style.display = "block";
+      weatherCard.innerHTML = `
+        <div style="font-weight:800">Weather</div>
+        <div class="line"><span class="skeleton" style="display:inline-block;width:140px;height:14px"></span></div>
+        <div class="line"><span class="skeleton" style="display:inline-block;width:110px;height:12px"></span></div>
+      `;
+
+      try{
+        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+        const d = await r.json();
+        if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
+
+        const c = d.data.current;
+        const icon = weatherIcon(c.weather_code);
+
+        weatherCard.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-weight:900">Weather</div>
+            <div style="opacity:.9">${icon}</div>
+          </div>
+          <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
+          <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
+          <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
+        `;
+      } catch {
+        weatherCard.innerHTML = `
+          <div style="font-weight:800">Weather</div>
+          <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
+        `;
+      }
+    }
+
+    // =========================
+    // Voice: less creepy + better Greek handling
+    // =========================
+    let cachedVoices = [];
+    function refreshVoices(){
+      cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
+    }
+    if ("speechSynthesis" in window){
+      refreshVoices();
+      speechSynthesis.onvoiceschanged = refreshVoices;
+    }
+
+    function pickBestVoice(){
+      if (!cachedVoices.length) refreshVoices();
+      // Prefer Greek voices
+      const greek = cachedVoices.find(v => (v.lang || "").toLowerCase().startsWith("el"));
+      if (greek) return greek;
+
+      // fallback: English
+      const en = cachedVoices.find(v => (v.lang || "").toLowerCase().startsWith("en"));
+      return en || null;
+    }
+
+    function stripGreekIfNoGreekVoice(text){
+      const v = pickBestVoice();
+      const hasGreekVoice = v && (v.lang || "").toLowerCase().startsWith("el");
+      if (hasGreekVoice) return text;
+      // remove greek characters to avoid butcher in en voice
+      return String(text).replace(/[\u0370-\u03FF\u1F00-\u1FFF]+/g, "").replace(/\s+/g," ").trim();
+    }
+
+    function speak(text){
+      try{
+        if (!("speechSynthesis" in window)) return;
+        const voice = pickBestVoice();
+        const cleaned = stripGreekIfNoGreekVoice(text);
+        if (!cleaned) return;
+
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(cleaned);
+
+        if (voice){
+          u.voice = voice;
+          u.lang = voice.lang || (cleaned.match(/[\u0370-\u03FF\u1F00-\u1FFF]/) ? "el-GR" : "en-US");
+        } else {
+          u.lang = "en-US";
+        }
+
+        // less robotic
+        u.rate = 1.02;
+        u.pitch = 1.0;
+        u.volume = 1.0;
+
+        window.speechSynthesis.speak(u);
+      } catch {}
+    }
+
+    // =========================
+    // Destination + routing
+    // =========================
+    function setDestination(x, opts={}){
+      if (!x) return;
+
+      let dest = { ...x };
+      if (!inAthens(dest.lat, dest.lon)){
+        const c = clampToAthens(dest.lat, dest.lon);
+        dest.lat = c.lat; dest.lon = c.lon;
+        toast("Outside Athens", "Pinned outside the Athens area. Clamped inside bounds.", "info");
+      }
+
+      nav.dest = dest;
+
+      if (destMarker) destMarker.remove();
+      destMarker = L.marker([dest.lat, dest.lon]).addTo(map)
+        .bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
+
+      map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
+
+      updateWeather(dest.lat, dest.lon);
+
+      if (myLocation){
+        startRoute();
+      } else {
+        stopNav(true);
+      }
+
+      cacheUiState();
+    }
+
+    function buildInstruction(step){
+      const m = step.maneuver || {};
+      const type = (m.type || "").toLowerCase();
+      const mod  = (m.modifier || "").toLowerCase();
+      const name = step.name ? ` onto ${step.name}` : "";
+
+      if (type === "depart") return `Start${name}`;
+      if (type === "arrive") return `Arrive at destination`;
+      if (type === "roundabout") return `At roundabout, take exit${name}`;
+      if (type === "merge") return `Merge${name}`;
+      if (type === "on ramp") return `Take the ramp${name}`;
+      if (type === "off ramp") return `Exit the ramp${name}`;
+
+      if (type === "turn"){
+        if (mod) return `Turn ${mod}${name}`;
+        return `Turn${name}`;
+      }
+
+      if (type === "continue" || type === "new name" || type === "straight"){
+        return `Continue${name}`;
+      }
+
+      if (type === "fork"){
+        if (mod) return `Keep ${mod}${name}`;
+        return `Keep${name}`;
+      }
+
+      return step.name ? `Go on ${step.name}` : "Continue";
+    }
+
+    // Always different walking/driving ETA: we compute duration from distance
+    function estimateDurationSeconds(distanceM, mode){
+      // city-realistic baselines
+      const walkingMps = 4.8 * 1000 / 3600; // 4.8 km/h
+      const drivingMps = 25  * 1000 / 3600; // 25 km/h baseline in Athens traffic
+      const mps = (mode === "driving") ? drivingMps : walkingMps;
+      return distanceM / mps;
+    }
+
+    async function startRoute(){
+      if (!myLocation || !nav.dest) return;
+      nav.mode = modeSel.value || "walking";
+      setStatus("Calculating route…");
+
+      navCard.style.display = "block";
+      navInstr.textContent = "Calculating route…";
+      navSub.innerHTML = `<span class="skeleton" style="display:inline-block;width:220px;height:12px"></span>`;
+
+      try{
+        const url =
+          `https://router.project-osrm.org/route/v1/${nav.mode}/` +
+          `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
+          `?overview=full&geometries=geojson&steps=true`;
+
+        const r = await fetch(url);
+        const j = await r.json();
+        const route = j.routes?.[0];
+        if (!route) throw new Error("no route");
+
+        const coords = route.geometry?.coordinates || [];
+        const latlngs = coords.map(c => [c[1], c[0]]);
+        if (routeLine) routeLine.remove();
+        routeLine = L.polyline(latlngs).addTo(map);
+
+        const leg = route.legs?.[0];
+        const steps = Array.isArray(leg?.steps) ? leg.steps : [];
+
+        nav.steps = steps.map(s => ({
+          distance: s.distance,
+          duration: s.duration,
+          name: s.name || "",
+          maneuver: s.maneuver || {},
+          instruction: buildInstruction(s)
+        }));
+
+        nav.stepIndex = 0;
+        nav.distanceM = route.distance;
+
+        // Force ETA difference
+        nav.durationSource = route.duration;
+        nav.durationS = estimateDurationSeconds(nav.distanceM, nav.mode);
+
+        setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
+        showNavStep();
+
+        cacheUiState();
+      } catch {
+        setStatus("Route failed.");
+        toast("Route error", "Could not calculate route. Try again.", "bad");
+        stopNav(true);
+      }
+    }
+
+    function showNavStep(){
+      if (!nav.steps.length){
+        stopNav(true);
+        return;
+      }
+      navCard.style.display = "block";
+
+      const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
+      nav.stepIndex = i;
+
+      const s = nav.steps[i];
+      navInstr.textContent = s.instruction;
+
+      const totalEta = formatDuration(nav.durationS);
+      navSub.textContent =
+        `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${totalEta} (${nav.mode})`;
+
+      navPrev.disabled = (i === 0);
+      navNext.disabled = (i === nav.steps.length - 1);
+
+      if (nav.voiceOn) speak(s.instruction);
+
+      const loc = s.maneuver?.location;
+      if (Array.isArray(loc) && loc.length === 2){
+        map.panTo([loc[1], loc[0]], { animate:true });
+      }
+    }
+
+    function stopNav(keepCard=false){
+      nav.steps = [];
+      nav.stepIndex = 0;
+      nav.distanceM = null;
+      nav.durationS = null;
+      nav.durationSource = null;
+      if (!keepCard) navCard.style.display = "none";
+    }
+
+    // =========================
+    // Search + Nearby + Suggestions
     // =========================
     let suggestTimer = null;
+
     async function fetchSuggestions(q){
       if (!q || q.length < 2) { suggestBox.style.display="none"; return; }
 
@@ -676,7 +1148,11 @@
         });
         const d = await r.json();
         const list = Array.isArray(d?.top5) ? d.top5 : (Array.isArray(d?.results) ? d.results.slice(0,5) : []);
-        const inBox = list.filter(x => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lon))).slice(0,5);
+        const inBox = list
+          .filter(x => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lon)))
+          .map(x => ({ ...x, lat:Number(x.lat), lon:Number(x.lon) }))
+          .filter(x => inAthens(x.lat, x.lon))
+          .slice(0,5);
 
         if (!inBox.length) { suggestBox.style.display="none"; return; }
 
@@ -694,7 +1170,6 @@
             const pick = inBox[idx];
             suggestBox.style.display="none";
             qEl.value = pick.name || q;
-            // show it as destination instantly
             setDestination(pick);
           });
         });
@@ -709,26 +1184,136 @@
       suggestTimer = setTimeout(()=>fetchSuggestions(q), 220);
     }
 
-    function hideSuggest(){ suggestBox.style.display="none"; }
+    function showSearchSkeleton(){
+      resultsWrap.style.display = "block";
+      clearBtn.style.display = "inline-flex";
+      resultsMeta.textContent = "Searching…";
+      resultsList.innerHTML = Array.from({length:5}).map(()=>`
+        <div class="res">
+          <div class="skeleton" style="height:14px;width:70%"></div>
+          <div class="skeleton" style="height:12px;width:90%;margin-top:8px"></div>
+        </div>
+      `).join("");
+    }
+
+    async function doSearch(qOverride=null){
+      const q = (qOverride ?? qEl.value).trim();
+      if (!q) return;
+
+      hideSuggest();
+      hideSavedMenu();
+      saveRecent(q);
+
+      setLoading(true, "Searching…");
+      setStatus("Searching…");
+      showSearchSkeleton();
+
+      try{
+        const r = await fetch("/where", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ q })
+        });
+        const d = await r.json();
+
+        const list = Array.isArray(d?.results) ? d.results : [];
+        const filtered = list
+          .map(x => ({
+            name: x.name,
+            address: x.address,
+            lat: Number(x.lat),
+            lon: Number(x.lon),
+            osmUrl: x.osmUrl || ""
+          }))
+          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+          .filter(x => inAthens(x.lat, x.lon));
+
+        results = filtered;
+        selectedIndex = results.length ? 0 : -1;
+
+        if (!results.length){
+          setStatus("No results.");
+          toast("No results", "Try a different search.", "info");
+          resultsWrap.style.display = "none";
+          clearBtn.style.display = "none";
+          markersLayer.clearLayers();
+          setLoading(false);
+          return;
+        }
+
+        setStatus(`Found ${results.length} results.`);
+        renderMarkers();
+        renderResults();
+        pickResult(0);
+      } catch {
+        setStatus("Network error.");
+        toast("Network error", "Could not reach the server. Try again.", "bad");
+      } finally {
+        setLoading(false);
+      }
+
+      cacheUiState();
+    }
+
+    async function nearMe(){
+      if (!myLocation){
+        toast("Need location", "Tap “My location” first.", "bad");
+        return;
+      }
+
+      hideSuggest();
+      hideSavedMenu();
+      setLoading(true, "Searching near you…");
+      setStatus("Searching near you…");
+      showSearchSkeleton();
+
+      try{
+        const cat = nearSel.value;
+        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
+        const d = await r.json();
+
+        const list = Array.isArray(d?.results) ? d.results : [];
+        const filtered = list
+          .map(x => ({
+            name: x.name,
+            address: x.address,
+            lat: Number(x.lat),
+            lon: Number(x.lon),
+            osmUrl: x.osmUrl || ""
+          }))
+          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
+          .filter(x => inAthens(x.lat, x.lon));
+
+        results = filtered;
+        selectedIndex = results.length ? 0 : -1;
+
+        if (!results.length){
+          setStatus("Nothing found near you.");
+          toast("No nearby results", "Try a different category.", "info");
+          resultsWrap.style.display = "none";
+          clearBtn.style.display = "none";
+          markersLayer.clearLayers();
+          setLoading(false);
+          return;
+        }
+
+        setStatus(`Found ${results.length} nearby.`);
+        renderMarkers();
+        renderResults();
+        pickResult(0);
+      } catch {
+        setStatus("Network error.");
+        toast("Network error", "Could not fetch nearby places.", "bad");
+      } finally {
+        setLoading(false);
+      }
+
+      cacheUiState();
+    }
 
     // =========================
     // Results rendering
     // =========================
-    function clearAll(){
-      results = [];
-      selectedIndex = -1;
-      markersLayer.clearLayers();
-      if (routeLine) { routeLine.remove(); routeLine = null; }
-      if (destMarker) { destMarker.remove(); destMarker = null; }
-      stopNav();
-      resultsWrap.style.display = "none";
-      clearBtn.style.display = "none";
-      resultsList.innerHTML = "";
-      resultsMeta.textContent = "—";
-      setStatus("Ready");
-      // keep weather card (it’s useful)
-    }
-
     function renderResults(){
       if (!results.length){
         resultsWrap.style.display = "none";
@@ -743,7 +1328,9 @@
       resultsList.innerHTML = results.map((x,i)=>{
         const dist = myLocation ? formatDistanceMeters(haversineMeters(myLocation.lat, myLocation.lon, x.lat, x.lon)) : "";
         const distHtml = myLocation ? ` · ${dist}` : "";
-        const addr = x.address ? `<div class="resMeta">${escapeHtml(x.address)}${escapeHtml(distHtml)}</div>` : (myLocation ? `<div class="resMeta">${escapeHtml(dist)}</div>` : "");
+        const addr = x.address
+          ? `<div class="resMeta">${escapeHtml(x.address)}${escapeHtml(distHtml)}</div>`
+          : (myLocation ? `<div class="resMeta">${escapeHtml(dist)}</div>` : "");
         return `
           <div class="res ${i===selectedIndex ? "selected":""}" data-idx="${i}">
             <div class="resTitle">${escapeHtml(x.name || "Place")}</div>
@@ -784,360 +1371,7 @@
     }
 
     // =========================
-    // Distance math
-    // =========================
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = (x) => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    // =========================
-    // Weather
-    // =========================
-    async function updateWeather(lat, lon){
-      weatherCard.style.display = "block";
-      weatherCard.innerHTML = `
-        <div style="font-weight:800">Weather</div>
-        <div class="line"><span class="skeleton" style="display:inline-block;width:140px;height:14px"></span></div>
-        <div class="line"><span class="skeleton" style="display:inline-block;width:110px;height:12px"></span></div>
-      `;
-
-      try{
-        const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
-        const d = await r.json();
-        if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
-
-        const c = d.data.current;
-        const icon = weatherIcon(c.weather_code);
-
-        weatherCard.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="font-weight:900">Weather</div>
-            <div style="opacity:.9">${icon}</div>
-          </div>
-          <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
-          <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
-          <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
-        `;
-      } catch {
-        weatherCard.innerHTML = `
-          <div style="font-weight:800">Weather</div>
-          <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
-        `;
-      }
-    }
-
-    // =========================
-    // Destination + routing
-    // =========================
-    function setDestination(x, opts={}){
-      if (!x) return;
-
-      // if user clicks outside Athens, clamp destination inside bounds so map never “locks”
-      let dest = { ...x };
-      if (!inAthens(dest.lat, dest.lon)){
-        const c = clampToAthens(dest.lat, dest.lon);
-        dest.lat = c.lat; dest.lon = c.lon;
-        toast("Outside Athens", "Pinned outside the Athens area. Clamped inside bounds.", "info");
-      }
-
-      nav.dest = dest;
-
-      if (destMarker) destMarker.remove();
-      destMarker = L.marker([dest.lat, dest.lon]).addTo(map).bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
-
-      map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
-
-      // weather follows destination (more useful than random)
-      updateWeather(dest.lat, dest.lon);
-
-      // start routing if we have myLocation
-      if (myLocation){
-        startRoute();
-      } else {
-        // still show nav card only when we have route
-        stopNav(true);
-      }
-
-      // cache last destination
-      cacheUiState();
-    }
-
-    async function startRoute(){
-      if (!myLocation || !nav.dest) return;
-      nav.mode = modeSel.value || "walking";
-      setStatus("Calculating route…");
-
-      // skeleton nav card
-      navCard.style.display = "block";
-      navInstr.textContent = "Calculating route…";
-      navSub.innerHTML = `<span class="skeleton" style="display:inline-block;width:220px;height:12px"></span>`;
-
-      try{
-        const url =
-          `https://router.project-osrm.org/route/v1/${nav.mode}/` +
-          `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
-          `?overview=full&geometries=geojson&steps=true`;
-
-        const r = await fetch(url);
-        const j = await r.json();
-        const route = j.routes?.[0];
-        if (!route) throw new Error("no route");
-
-        // line
-        const coords = route.geometry?.coordinates || [];
-        const latlngs = coords.map(c => [c[1], c[0]]);
-        if (routeLine) routeLine.remove();
-        routeLine = L.polyline(latlngs).addTo(map);
-
-        // steps
-        const leg = route.legs?.[0];
-        const steps = Array.isArray(leg?.steps) ? leg.steps : [];
-        nav.steps = steps.map(s => ({
-          distance: s.distance,
-          duration: s.duration,
-          name: s.name || "",
-          maneuver: s.maneuver || {},
-          instruction: buildInstruction(s)
-        }));
-
-        nav.stepIndex = 0;
-        nav.distanceM = route.distance;
-        nav.durationS = route.duration;
-
-        setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
-        showNavStep();
-
-        cacheUiState();
-      } catch {
-        setStatus("Route failed.");
-        toast("Route error", "Could not calculate route. Try again.", "bad");
-        stopNav(true);
-      }
-    }
-
-    function buildInstruction(step){
-      const m = step.maneuver || {};
-      // OSRM "straight" means continue (not a literal straight road) — we phrase it nicely:
-      const type = (m.type || "").toLowerCase();
-      const mod  = (m.modifier || "").toLowerCase();
-      const name = step.name ? ` onto ${step.name}` : "";
-
-      if (type === "depart") return `Start${name}`;
-      if (type === "arrive") return `Arrive at destination`;
-      if (type === "roundabout") return `At roundabout, take exit${name}`;
-      if (type === "merge") return `Merge${name}`;
-      if (type === "on ramp") return `Take the ramp${name}`;
-      if (type === "off ramp") return `Exit the ramp${name}`;
-
-      if (type === "turn"){
-        if (mod) return `Turn ${mod}${name}`;
-        return `Turn${name}`;
-      }
-
-      if (type === "continue" || type === "new name" || type === "straight"){
-        return `Continue${name}`;
-      }
-
-      if (type === "fork"){
-        if (mod) return `Keep ${mod}${name}`;
-        return `Keep${name}`;
-      }
-
-      return step.name ? `Go on ${step.name}` : "Continue";
-    }
-
-    function showNavStep(){
-      if (!nav.steps.length){
-        stopNav(true);
-        return;
-      }
-      navCard.style.display = "block";
-
-      const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
-      nav.stepIndex = i;
-
-      const s = nav.steps[i];
-      navInstr.textContent = s.instruction;
-      navSub.textContent = `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · ~${formatDuration(s.duration)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
-
-      navPrev.disabled = (i === 0);
-      navNext.disabled = (i === nav.steps.length - 1);
-
-      if (nav.voiceOn) speak(s.instruction);
-
-      // keep selected step visible by centering map on the maneuver location if available
-      const loc = s.maneuver?.location;
-      if (Array.isArray(loc) && loc.length === 2){
-        map.panTo([loc[1], loc[0]], { animate:true });
-      }
-    }
-
-    function stopNav(keepCard=false){
-      nav.steps = [];
-      nav.stepIndex = 0;
-      nav.distanceM = null;
-      nav.durationS = null;
-      if (!keepCard) navCard.style.display = "none";
-    }
-
-    function speak(text){
-      try{
-        if (!("speechSynthesis" in window)) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = "en-US";
-        window.speechSynthesis.speak(u);
-      } catch {}
-    }
-
-    // reroute if user moves significantly
-    let lastRerouteAt = 0;
-    function maybeReroute(){
-      if (!myLocation || !nav.dest) return;
-      const now = Date.now();
-      if (now - lastRerouteAt < 6000) return; // at most every 6s
-      lastRerouteAt = now;
-      startRoute();
-    }
-
-    // =========================
-    // Search + Nearby
-    // =========================
-    function showSearchSkeleton(){
-      resultsWrap.style.display = "block";
-      clearBtn.style.display = "inline-flex";
-      resultsMeta.textContent = "Searching…";
-      resultsList.innerHTML = Array.from({length:5}).map(()=>`
-        <div class="res">
-          <div class="skeleton" style="height:14px;width:70%"></div>
-          <div class="skeleton" style="height:12px;width:90%;margin-top:8px"></div>
-        </div>
-      `).join("");
-    }
-
-    async function doSearch(qOverride=null){
-      const q = (qOverride ?? qEl.value).trim();
-      if (!q) return;
-
-      hideSuggest();
-      saveRecent(q);
-
-      setLoading(true, "Searching…");
-      setStatus("Searching…");
-      showSearchSkeleton();
-
-      try{
-        const r = await fetch("/where", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ q })
-        });
-        const d = await r.json();
-
-        const list = Array.isArray(d?.results) ? d.results : [];
-        const filtered = list
-          .map(x => ({
-            name: x.name,
-            address: x.address,
-            lat: Number(x.lat),
-            lon: Number(x.lon),
-            osmUrl: x.osmUrl || ""
-          }))
-          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
-          .filter(x => inAthens(x.lat, x.lon));
-
-        results = filtered;
-        selectedIndex = results.length ? 0 : -1;
-
-        if (!results.length){
-          setStatus("No results.");
-          toast("No results", "Try a different search or zoom area.", "info");
-          resultsWrap.style.display = "none";
-          clearBtn.style.display = "none";
-          markersLayer.clearLayers();
-          setLoading(false);
-          return;
-        }
-
-        setStatus(`Found ${results.length} results.`);
-        renderMarkers();
-        renderResults();
-        pickResult(0);
-      } catch {
-        setStatus("Network error.");
-        toast("Network error", "Could not reach the server. Try again.", "bad");
-      } finally {
-        setLoading(false);
-      }
-
-      cacheUiState();
-    }
-
-    async function nearMe(){
-      if (!myLocation){
-        toast("Need location", "Tap “My location” first.", "bad");
-        return;
-      }
-
-      hideSuggest();
-      setLoading(true, "Searching near you…");
-      setStatus("Searching near you…");
-      showSearchSkeleton();
-
-      try{
-        const cat = nearSel.value;
-        const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
-        const d = await r.json();
-
-        const list = Array.isArray(d?.results) ? d.results : [];
-        const filtered = list
-          .map(x => ({
-            name: x.name,
-            address: x.address,
-            lat: Number(x.lat),
-            lon: Number(x.lon),
-            osmUrl: x.osmUrl || ""
-          }))
-          .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
-          .filter(x => inAthens(x.lat, x.lon));
-
-        results = filtered;
-        selectedIndex = results.length ? 0 : -1;
-
-        if (!results.length){
-          setStatus("Nothing found near you.");
-          toast("No nearby results", "Try a different category or move closer.", "info");
-          resultsWrap.style.display = "none";
-          clearBtn.style.display = "none";
-          markersLayer.clearLayers();
-          setLoading(false);
-          return;
-        }
-
-        setStatus(`Found ${results.length} nearby.`);
-        renderMarkers();
-        renderResults();
-        pickResult(0);
-      } catch {
-        setStatus("Network error.");
-        toast("Network error", "Could not fetch nearby places.", "bad");
-      } finally {
-        setLoading(false);
-      }
-
-      cacheUiState();
-    }
-
-    // =========================
-    // Location (fix “different country blocks map”)
+    // Location
     // =========================
     function locateMe(){
       if (!navigator.geolocation){
@@ -1159,8 +1393,6 @@
           myLocation = { lat: use.lat, lon: use.lon, rawOutside: outside, rawLat, rawLon };
 
           if (myMarker) myMarker.remove();
-
-          // If outside Athens, we still place the marker in Athens (clamped) to avoid “blocking”
           myMarker = L.circleMarker([use.lat, use.lon], { radius: 8 }).addTo(map)
             .bindPopup(outside ? "Your location is outside Athens (clamped inside Athens bounds)" : "You are here");
 
@@ -1170,14 +1402,12 @@
           locBtn.textContent = "My location";
 
           if (outside){
-            toast("Outside Athens", "Your GPS is outside Athens. We kept you inside Athens area so the map never locks.", "info", 5200);
+            toast("Outside Athens", "GPS is outside Athens. Kept inside Athens area.", "info", 5200);
           } else {
             toast("Location set", "GPS acquired.", "ok");
           }
 
-          // If destination exists, route now
           if (nav.dest) startRoute();
-
           cacheUiState();
         },
         (err) => {
@@ -1194,7 +1424,7 @@
     }
 
     // =========================
-    // Panel collapse + Athens button
+    // Panel collapse
     // =========================
     function setCollapsed(state){
       collapsed = !!state;
@@ -1203,15 +1433,46 @@
       setTimeout(()=>map.invalidateSize(), 50);
     }
 
-    function goAthens(){
-      map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
-      toast("Athens", "Returned to Athens area.", "info");
+    // =========================
+    // Clear
+    // =========================
+    function clearAll(){
+      results = [];
+      selectedIndex = -1;
+      markersLayer.clearLayers();
+      if (routeLine) { routeLine.remove(); routeLine = null; }
+      if (destMarker) { destMarker.remove(); destMarker = null; }
+      stopNav();
+      resultsWrap.style.display = "none";
+      clearBtn.style.display = "none";
+      resultsList.innerHTML = "";
+      resultsMeta.textContent = "—";
+      setStatus("Ready");
     }
 
     // =========================
-    // Cache UI (offline-ish)
+    // Map click behavior:
+    // - If armSaveKey is active: save that slot to clicked point
+    // - Else: set destination as pin + route
     // =========================
-    const UI_KEY = "cpya_ui_state";
+    map.on("click", (e) => {
+      const { lat, lng } = e.latlng;
+
+      if (armSaveKey){
+        setSavedPlace(armSaveKey, lat, lng);
+        toast("Saved", `${armSaveKey} saved from map click.`, "ok");
+        armSaveKey = null;
+        return;
+      }
+
+      setDestination({ lat, lon: lng, name: "Pinned location", address: "" }, { fromMapClick: true });
+      toast("Pinned", "Destination pinned. Calculating route…", "info");
+    });
+
+    // =========================
+    // Cache UI
+    // =========================
+    const UI_KEY = "cpya_ui_state_v11";
     function cacheUiState(){
       try{
         const state = {
@@ -1220,6 +1481,7 @@
           lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
           lastResults: results.slice(0, 20),
           selectedIndex,
+          voiceOn: !!nav.voiceOn
         };
         saveJson(UI_KEY, state);
       } catch {}
@@ -1231,6 +1493,8 @@
 
       if (state.q) qEl.value = state.q;
       if (state.mode) modeSel.value = state.mode;
+      nav.voiceOn = !!state.voiceOn;
+      navVoice.textContent = nav.voiceOn ? "🔈 Voice: On" : "🔈 Voice: Off";
 
       if (Array.isArray(state.lastResults) && state.lastResults.length){
         results = state.lastResults
@@ -1243,7 +1507,6 @@
 
       if (state.lastDest && Number.isFinite(state.lastDest.lat) && Number.isFinite(state.lastDest.lon)){
         nav.dest = { ...state.lastDest };
-        // don’t auto-route until location exists, but show weather
         updateWeather(nav.dest.lat, nav.dest.lon);
       }
     }
@@ -1262,13 +1525,14 @@
     });
     navCenter.addEventListener("click", ()=>{
       if (myLocation) map.setView([myLocation.lat, myLocation.lon], 15);
-      else goAthens();
+      else map.fitBounds(ATHENS_BOUNDS, { padding:[20,20] });
     });
 
     // =========================
     // Init
     // =========================
     window.addEventListener("DOMContentLoaded", ()=>{
+      setRandomPlaceholder();
       renderChips();
       restoreUiState();
 
@@ -1283,8 +1547,6 @@
       locBtn.addEventListener("click", locateMe);
       nearBtn.addEventListener("click", nearMe);
 
-      athBtn.addEventListener("click", goAthens);
-
       clearBtn.addEventListener("click", ()=>{
         clearAll();
         toast("Cleared", "Results and route cleared.", "info");
@@ -1296,13 +1558,12 @@
       });
 
       togglePanelBtn.addEventListener("click", ()=> setCollapsed(!collapsed));
-
-      // whenever user moves (if they re-tap My location), reroute
-      // If you later implement watchPosition, call maybeReroute() in it.
     });
 
-    // expose reroute for later watchPosition upgrade
-    window.__cpya_reroute = maybeReroute;
+    // expose reroute hook for later watchPosition upgrade
+    window.__cpya_reroute = () => {
+      if (myLocation && nav.dest) startRoute();
+    };
   </script>
 </body>
 </html>
