@@ -12,12 +12,10 @@
     :root{
       --bg:#07080b;
       --card: rgba(17,19,24,.92);
-      --card2: rgba(12,14,18,.92);
       --text:#e8eaed;
       --muted:#aab0bb;
       --line:rgba(255,255,255,.10);
       --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --shadow2: 0 16px 40px rgba(0,0,0,.45);
       --radius: 16px;
       --radius2: 22px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -25,7 +23,6 @@
       --accent:#4aa3ff;
       --danger:#ff4d4d;
       --ok:#00d084;
-      --glass: blur(12px);
     }
 
     html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
@@ -37,17 +34,14 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: var(--glass);
-      -webkit-backdrop-filter: var(--glass);
+      backdrop-filter: blur(10px);
     }
 
-    /* ===== Splash ===== */
+    /* Splash */
     #splash{
       position: fixed; inset: 0; z-index: 9000;
       display:flex; align-items:center; justify-content:center;
-      background: radial-gradient(1200px 800px at 70% 0%, rgba(74,163,255,.16), transparent 55%),
-                  radial-gradient(900px 700px at 0% 100%, rgba(0,208,132,.10), transparent 55%),
-                  #07080b;
+      background: #07080b;
       transition: opacity .35s ease;
     }
     #splash.hidden{ opacity:0; pointer-events:none; }
@@ -55,7 +49,7 @@
     #splashLogo{
       width: 100%;
       border-radius: 18px;
-      box-shadow: var(--shadow2);
+      box-shadow: var(--shadow);
       border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(135deg, rgba(74,163,255,.22), rgba(255,255,255,.06));
       padding: 22px 16px;
@@ -65,13 +59,13 @@
     #splashMeta{ margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
     #splashMeta b{ color: var(--text); }
 
-    /* ===== Toasts ===== */
+    /* Toasts */
     #toastWrap{
       position: fixed;
       top: calc(12px + var(--safe-top));
       left: 50%;
       transform: translateX(-50%);
-      z-index: 6000;
+      z-index: 6500;
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -96,39 +90,72 @@
     .toast.bad{ border-color: rgba(255,77,77,.35); }
     .toast.ok{ border-color: rgba(0,208,132,.35); }
 
-    /* ===== Loading overlay ===== */
-    #loadingOverlay{
-      position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
-      z-index: 5000; background: rgba(0,0,0,.35); backdrop-filter: blur(3px);
-    }
-    .loaderCard{
-      padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line);
-      background: rgba(17,19,24,.92); box-shadow: var(--shadow2);
-      display:flex; align-items:center; gap:12px; max-width: 92vw;
-    }
-    .spinner{
-      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.2);
-      border-top-color: rgba(255,255,255,.9); border-radius: 999px; animation: spin 0.9s linear infinite;
-    }
+    /* Loading overlay */
+    #loadingOverlay{ position: fixed; inset: 0; display:none; align-items:center; justify-content:center; z-index: 5000; background: rgba(0,0,0,.35); backdrop-filter: blur(3px); }
+    .loaderCard{ padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line); background: rgba(17,19,24,.92); box-shadow: var(--shadow); display:flex; align-items:center; gap:12px; max-width: 92vw; }
+    .spinner{ width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.2); border-top-color: rgba(255,255,255,.9); border-radius: 999px; animation: spin 0.9s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ===== Weather ===== */
-    #weatherCard{
+    /* Top HUD (time / weather / compass) */
+    #topHud{
       position: fixed;
       left: 12px;
-      bottom: calc(12px + var(--safe-bottom));
-      z-index: 1200;
-      padding: 10px 12px;
-      border-radius: 16px;
-      display:none;
-      min-width: 180px;
-      max-width: min(320px, 80vw);
+      right: 12px;
+      top: calc(10px + var(--safe-top));
+      z-index: 3000;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none; /* only children should be clickable */
     }
-    #weatherCard .line{ font-size: 13px; color: var(--muted); margin-top: 2px; }
-    #weatherCard .big{ font-size: 18px; font-weight: 900; }
-    #weatherCard .tiny{ font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .hudGroup{ display:flex; gap:10px; align-items:center; pointer-events:auto; }
+    .hudPill{
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(17,19,24,.82);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      user-select:none;
+    }
+    .hudIcon{
+      width: 34px; height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 16px;
+    }
+    .hudText{ display:flex; flex-direction:column; line-height: 1.05; }
+    .hudText .a{ font-weight: 950; font-size: 13px; }
+    .hudText .b{ font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .hudBtn{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(17,19,24,.82);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 12px;
+      cursor:pointer;
+      user-select:none;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      display:flex; align-items:center; gap:8px;
+    }
+    .hudBtn:hover{ background: rgba(255,255,255,.10); }
+    #compassNeedle{
+      width: 18px; height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 12px;
+      transform: rotate(0deg);
+      transition: transform .10s linear;
+    }
 
-    /* ===== Buttons / Inputs ===== */
+    /* Buttons / inputs */
     .btn{
       background: rgba(255,255,255,.08);
       color: var(--text);
@@ -139,18 +166,16 @@
       cursor:pointer;
       user-select:none;
       white-space:nowrap;
-      transition: transform .06s ease, background .12s ease, border-color .12s ease;
-      touch-action: manipulation;
     }
     .btn:hover{ background: rgba(255,255,255,.12); }
-    .btn:active{ transform: translateY(1px) scale(.99); }
     .btn.primary{ background: rgba(74,163,255,.18); border-color: rgba(74,163,255,.35); }
     .btn.danger{ background: rgba(255,77,77,.14); border-color: rgba(255,77,77,.35); }
     .btn.slim{ padding: 10px 10px; font-size: 14px; border-radius: 12px; }
+    .btn.icon{ width: 44px; height: 44px; border-radius: 14px; display:flex; align-items:center; justify-content:center; padding: 0; }
 
     .input{
-      flex: 1 1 240px;
-      min-width: 160px;
+      flex: 1 1 auto;
+      min-width: 0;
       background: rgba(255,255,255,.06);
       color: var(--text);
       border: 1px solid var(--line);
@@ -159,7 +184,6 @@
       font-size: 16px;
       outline:none;
     }
-    .input:focus{ border-color: rgba(74,163,255,.45); }
     select{
       background: rgba(255,255,255,.06);
       color: var(--text);
@@ -167,48 +191,23 @@
       border-radius: 14px;
       padding: 12px 12px;
       font-size: 14px;
-      outline:none;
     }
-    select:focus{ border-color: rgba(74,163,255,.45); }
     .small { font-size: 12px; color: var(--muted); }
-
-    /* ===== Panel (bottom sheet) ===== */
-    #panel{
-      z-index: 2000;
-      position: fixed;
-      left: 0; right: 0;
-      bottom: 0;
-      background: rgba(8,10,14,.92);
-      border-top: 1px solid var(--line);
-      border-top-left-radius: var(--radius2);
-      border-top-right-radius: var(--radius2);
-      padding: 10px 12px calc(10px + var(--safe-bottom));
-      transform: translateY(0);
-      transition: transform .22s ease;
-      will-change: transform;
-      box-shadow: 0 -18px 40px rgba(0,0,0,.35);
-    }
-    #panelHandle{
-      width: 44px; height: 5px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.22);
-      margin: 4px auto 10px;
-      cursor: grab; user-select:none;
-    }
-    #panelInner{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    #panelRow{ margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row.nowrap{ flex-wrap:nowrap; }
+    .spacer{ flex: 1; }
 
     /* Suggestions */
     #suggestBox{
-      position:absolute;
+      position: fixed;
       left: 12px; right: 12px;
-      bottom: calc(10px + var(--safe-bottom) + 112px);
+      top: calc(72px + var(--safe-top));
       display:none;
-      z-index: 2200;
+      z-index: 3200;
       border-radius: 16px;
       overflow:hidden;
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: var(--shadow2);
+      max-width: 760px;
+      margin: 0 auto;
     }
     #suggestBox .item{
       padding: 10px 12px;
@@ -220,26 +219,85 @@
     #suggestBox .item:hover{ background: rgba(255,255,255,.06); }
     #suggestBox .sub{ font-size:12px; color: var(--muted); margin-top:3px; }
 
-    /* Chips */
-    .pill{
+    /* Bottom Sheet (panel) */
+    #panel{
+      z-index: 2600;
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      background: rgba(8,10,14,.92);
+      border-top: 1px solid var(--line);
+      border-top-left-radius: var(--radius2);
+      border-top-right-radius: var(--radius2);
+      padding: 10px 12px calc(10px + var(--safe-bottom));
+      transform: translateY(0);
+      transition: transform .22s ease;
+      will-change: transform;
+    }
+    #panelHandle{
+      width: 44px; height: 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.22);
+      margin: 4px auto 10px;
+      cursor: grab; user-select:none;
+    }
+
+    /* Tabs */
+    #tabs{
+      display:flex;
+      gap:8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding: 6px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab{
+      flex: 0 0 auto;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor:pointer;
+      user-select:none;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 850;
+      font-size: 13px;
+      display:flex; align-items:center; gap:8px;
+      white-space:nowrap;
+    }
+    .tab.active{
+      color: var(--text);
+      background: rgba(74,163,255,.16);
+      border-color: rgba(74,163,255,.35);
+    }
+
+    /* Category rail */
+    #catRail{
+      display:flex;
+      gap:10px;
+      overflow:auto;
+      padding: 4px 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .cat{
+      flex: 0 0 auto;
       display:inline-flex;
       align-items:center;
-      gap:6px;
-      padding: 6px 10px;
+      gap:8px;
+      padding: 10px 12px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      font-size: 12px;
-      color: var(--text);
-      user-select:none;
+      background: rgba(255,255,255,.05);
       cursor:pointer;
-      margin-right: 6px;
-      margin-top: 6px;
+      user-select:none;
       white-space:nowrap;
-      transition: background .12s ease, transform .06s ease;
+      font-weight: 850;
+      font-size: 13px;
     }
-    .pill:hover{ background: rgba(255,255,255,.10); }
-    .pill:active{ transform: translateY(1px) scale(.99); }
+    .cat:hover{ background: rgba(255,255,255,.08); }
+    .cat.active{ background: rgba(74,163,255,.16); border-color: rgba(74,163,255,.35); }
 
     /* Results */
     #resultsWrap{ margin-top: 10px; display:none; }
@@ -258,234 +316,98 @@
     .resTitle{ font-size: 14px; font-weight: 900; }
     .resMeta{ font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-    /* Desktop: right drawer */
-    @media (min-width: 721px){
-      #panel{
-        top: calc(12px + var(--safe-top));
-        bottom: auto;
-        left: auto;
-        right: 12px;
-        width: 440px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius2);
-        padding: 12px;
-        transform: translateX(0);
-        box-shadow: var(--shadow2);
-      }
-      #suggestBox{ bottom:auto; top: 62px; left: 12px; right: 12px; }
-      #panelHandle{
-        width: 46px; height: 34px;
-        margin: 0 0 10px auto;
-        display:flex; align-items:center; justify-content:center;
-        background: rgba(255,255,255,.06);
-        border: 1px solid rgba(255,255,255,.10);
-        border-radius: 14px;
-        cursor:pointer;
-      }
-    }
-
-    /* ===== Floating “Open Panel” button (when panel closed) ===== */
-    #panelRestore{
-      position: fixed;
-      right: 12px;
-      top: calc(12px + var(--safe-top));
-      z-index: 2600;
-      display:none;
-      width: 46px;
-      height: 46px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: rgba(17,19,24,.92);
-      color: var(--text);
-      box-shadow: var(--shadow2);
-      cursor:pointer;
-      align-items:center;
-      justify-content:center;
-      font-size: 18px;
-      user-select:none;
-    }
-    #panelRestore.show{ display:flex; }
-
-    /* ===== Zoom (bottom-right, thumb reachable) ===== */
-    #zoomDock{
-      position: fixed;
-      right: 12px;
-      bottom: calc(12px + var(--safe-bottom));
-      z-index: 1500;
+    /* Mini actions strip */
+    #miniActions{
       display:flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-end;
-      pointer-events: none;
-    }
-    .fab{
-      pointer-events:auto;
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(17,19,24,.88);
-      box-shadow: var(--shadow2);
-      backdrop-filter: var(--glass);
-      -webkit-backdrop-filter: var(--glass);
-      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
       align-items:center;
-      justify-content:center;
+      margin-top: 10px;
+    }
+    .chipBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
       cursor:pointer;
       user-select:none;
-      transition: transform .06s ease, background .12s ease;
-      color: var(--text);
+      font-weight: 850;
+      font-size: 13px;
     }
-    .fab:hover{ background: rgba(255,255,255,.08); }
-    .fab:active{ transform: translateY(1px) scale(.99); }
-    .fab svg{ width: 20px; height: 20px; opacity:.95; }
+    .chipBtn:hover{ background: rgba(255,255,255,.09); }
 
-    /* ===== Compass (mobile-first) ===== */
-    #compass{
-      position: fixed;
-      right: 12px;
-      bottom: calc(12px + var(--safe-bottom) + 120px);
-      z-index: 1500;
-      display:none;
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(17,19,24,.88);
-      box-shadow: var(--shadow2);
-      backdrop-filter: var(--glass);
-      -webkit-backdrop-filter: var(--glass);
-      user-select:none;
-      cursor:pointer;
-      align-items:center;
-      justify-content:center;
-    }
-    #compass.show{ display:flex; }
-    #needle{
-      width: 26px; height: 26px;
-      transform: rotate(0deg);
-      transition: transform .12s linear;
-    }
-    #compass .n{
-      position:absolute;
-      top: 4px;
-      font-size: 10px;
-      color: rgba(255,255,255,.85);
-      letter-spacing: .4px;
-      opacity:.9;
-    }
-
-    /* ===== Navigation HUD ===== */
-    #navHud{
+    /* Nav card (top) */
+    #navCard{
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      top: calc(12px + var(--safe-top));
-      z-index: 1700;
-      width: min(720px, 94vw);
+      top: calc(72px + var(--safe-top));
+      z-index: 2400;
+      padding: 12px 12px;
+      border-radius: 18px;
       display:none;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(12,14,18,.86);
-      box-shadow: var(--shadow2);
-      backdrop-filter: var(--glass);
-      -webkit-backdrop-filter: var(--glass);
-      overflow:hidden;
+      width: min(760px, 92vw);
+      pointer-events:auto;
     }
-    #navHud.show{ display:block; }
+    #navTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px; }
+    #navInstr{ font-size: 16px; font-weight: 950; line-height: 1.15; }
+    #navSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
+    #navBtns{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
 
-    #navHudInner{
-      padding: 12px 12px 10px;
+    /* Zoom pill (always centered above panel) */
+    #zoomPill{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(var(--panel-clear, 190px) + var(--safe-bottom));
+      z-index: 2400;
       display:flex;
-      gap: 12px;
-      align-items:center;
-    }
-    #navTurnIcon{
-      width: 44px; height: 44px;
-      border-radius: 16px;
+      overflow:hidden;
+      border-radius: 999px;
       border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      display:flex; align-items:center; justify-content:center;
-      flex: 0 0 auto;
+      background: rgba(17,19,24,.88);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      pointer-events:auto;
     }
-    #navTurnIcon svg{ width: 22px; height: 22px; opacity:.96; }
-    #navMain{ flex: 1 1 auto; min-width: 0; }
-    #navPrimary{
-      font-size: 15px;
-      font-weight: 900;
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .zoomBtn{
+      padding: 10px 14px;
+      cursor:pointer;
+      user-select:none;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 18px;
     }
-    #navSecondary{
-      margin-top: 3px;
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #navActions{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex: 0 0 auto;
-    }
-    .hudBtn{
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
+    .zoomBtn:hover{ background: rgba(255,255,255,.08); }
+    .zoomSep{ width: 1px; background: rgba(255,255,255,.12); }
+
+    /* Floating restore button (when panel closed) */
+    #panelRestore{
+      position: fixed;
+      right: 12px;
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 4000;
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
       border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      display:flex;
+      background: rgba(17,19,24,.92);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      display:none;
       align-items:center;
       justify-content:center;
-      cursor:pointer;
-      user-select:none;
-      transition: transform .06s ease, background .12s ease;
-      color: var(--text);
+      font-size: 18px;
+      backdrop-filter: blur(10px);
     }
-    .hudBtn:hover{ background: rgba(255,255,255,.09); }
-    .hudBtn:active{ transform: translateY(1px) scale(.99); }
-    .hudBtn svg{ width: 18px; height: 18px; opacity:.95; }
+    #panelRestore.show{ display:flex; }
 
-    #navHudBar{
-      padding: 10px 12px 12px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-      border-top: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.12);
-    }
-    #navMeta{
-      font-size: 12px;
-      color: var(--muted);
-    }
-    #navToggles{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:flex-end;
-    }
-    .togglePill{
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      font-size: 12px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      cursor:pointer;
-      user-select:none;
-      transition: transform .06s ease, background .12s ease;
-    }
-    .togglePill:hover{ background: rgba(255,255,255,.09); }
-    .togglePill:active{ transform: translateY(1px) scale(.99); }
-
-    /* ===== Modal ===== */
+    /* Modal */
     #modal{
       position: fixed; inset: 0; z-index: 8000;
       display:none; align-items:center; justify-content:center;
@@ -526,21 +448,43 @@
       outline:none;
     }
 
-    /* Leaflet: hide default zoom controls */
-    .leaflet-control-zoom{ display:none !important; }
-
-    /* Small polish */
-    .kbd{
-      font-size:11px;
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.85);
+    /* Desktop: right drawer style */
+    @media (min-width: 900px){
+      #panel{
+        top: calc(12px + var(--safe-top));
+        bottom: auto;
+        left: auto;
+        right: 12px;
+        width: 420px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius2);
+        padding: 12px;
+        transform: translateX(0);
+      }
+      #panelHandle{
+        width: 46px; height: 34px;
+        margin: 0 0 10px auto;
+        display:flex; align-items:center; justify-content:center;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: 14px;
+        cursor:pointer;
+      }
+      #panelRestore{
+        right: 12px;
+        bottom: calc(12px + var(--safe-bottom));
+      }
+      #suggestBox{
+        top: calc(62px + var(--safe-top));
+        max-width: 820px;
+      }
+      #navCard{
+        top: calc(12px + var(--safe-top));
+      }
     }
 
-    /* When navigating, reduce clutter */
-    body.nav-active #weatherCard{ display:none !important; }
+    /* Leaflet: hide default zoom controls (we use pill) */
+    .leaflet-control-zoom{ display:none !important; }
   </style>
 </head>
 
@@ -549,7 +493,7 @@
     <div id="splashInner">
       <div id="splashLogo">
         <h1>Athens Navigator</h1>
-        <p>Search • Save places • Navigate</p>
+        <p>Search • Explore • Navigate</p>
       </div>
       <div id="splashMeta">
         <div><b>Athens Navigator</b> · v1.2</div>
@@ -570,81 +514,79 @@
     </div>
   </div>
 
-  <div id="weatherCard" class="card"></div>
-
-  <!-- Panel restore (shows when panel closed) -->
-  <button id="panelRestore" type="button" aria-label="Open panel" title="Open panel">☰</button>
-
-  <!-- Compass -->
-  <div id="compass" aria-label="Compass" title="Tap: North-up">
-    <div class="n">N</div>
-    <svg id="needle" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 2 L15.5 12 L12 10.5 L8.5 12 Z" fill="rgba(255,255,255,.92)"/>
-      <path d="M12 22 L8.5 12 L12 13.5 L15.5 12 Z" fill="rgba(74,163,255,.55)"/>
-    </svg>
-  </div>
-
-  <!-- Zoom dock -->
-  <div id="zoomDock" aria-label="Map controls">
-    <button class="fab" id="zoomIn" title="Zoom in" aria-label="Zoom in">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <button class="fab" id="zoomOut" title="Zoom out" aria-label="Zoom out">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Navigation HUD -->
-  <div id="navHud" role="region" aria-label="Navigation">
-    <div id="navHudInner">
-      <div id="navTurnIcon" aria-hidden="true">
-        <svg id="navTurnSvg" viewBox="0 0 24 24" fill="none">
-          <path d="M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M12 5l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M12 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+  <!-- Top HUD -->
+  <div id="topHud">
+    <div class="hudGroup">
+      <div class="hudPill" id="timePill" title="Local time">
+        <div class="hudIcon">🕒</div>
+        <div class="hudText">
+          <div class="a" id="timeMain">—</div>
+          <div class="b" id="timeSub">—</div>
+        </div>
       </div>
-      <div id="navMain">
-        <div id="navPrimary">—</div>
-        <div id="navSecondary">—</div>
+
+      <div class="hudPill" id="weatherPill" title="Weather at destination / your location">
+        <div class="hudIcon" id="weatherIcon">⛅</div>
+        <div class="hudText">
+          <div class="a" id="weatherMain">Weather</div>
+          <div class="b" id="weatherSub">—</div>
+        </div>
       </div>
-      <div id="navActions">
-        <button class="hudBtn" id="navPrev" title="Previous step" aria-label="Previous step">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M14.5 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="hudBtn" id="navNext" title="Next step" aria-label="Next step">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M9.5 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="hudBtn" id="navClose" title="End navigation" aria-label="End navigation">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
+
+      <div class="hudPill" id="compassPill" title="Compass">
+        <div class="hudIcon"><div id="compassNeedle">▲</div></div>
+        <div class="hudText">
+          <div class="a" id="compassMain">N</div>
+          <div class="b" id="compassSub">—</div>
+        </div>
       </div>
     </div>
-    <div id="navHudBar">
-      <div id="navMeta">—</div>
-      <div id="navToggles">
-        <button class="togglePill" id="navVoice">Voice: Off</button>
-        <button class="togglePill" id="navFollow">Follow: On</button>
-        <button class="togglePill" id="navMe">Me</button>
-      </div>
+
+    <div class="hudGroup">
+      <button class="hudBtn" id="settingsBtn" type="button" title="Settings">
+        ⚙️ <span style="font-weight:900;font-size:13px;">Settings</span>
+      </button>
     </div>
   </div>
+
+  <!-- Suggestions dropdown -->
+  <div id="suggestBox" class="card"></div>
+
+  <!-- Nav card -->
+  <div id="navCard" class="card">
+    <div id="navTop">
+      <div style="min-width:0">
+        <div id="navInstr">—</div>
+        <div id="navSub">—</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn slim" id="navPrev" title="Previous step">◀</button>
+        <button class="btn slim primary" id="navNext" title="Next step">▶</button>
+        <button class="btn slim" id="navClose" title="End navigation">✕</button>
+      </div>
+    </div>
+    <div id="navBtns">
+      <button class="btn slim" id="navVoice">🔈 Voice: Off</button>
+      <button class="btn slim" id="navFollow">🧭 Follow: On</button>
+      <button class="btn slim primary" id="navMe">📍 Me</button>
+    </div>
+  </div>
+
+  <!-- Zoom -->
+  <div id="zoomPill" aria-label="Zoom">
+    <button class="zoomBtn" id="zoomOut" title="Zoom out">−</button>
+    <div class="zoomSep"></div>
+    <button class="zoomBtn" id="zoomIn" title="Zoom in">+</button>
+  </div>
+
+  <!-- Restore panel button -->
+  <button id="panelRestore" type="button" aria-label="Open menu">☰</button>
 
   <!-- Modal -->
   <div id="modal">
     <div id="modalCard" class="card">
       <div class="mRow" style="justify-content:space-between;">
-        <div class="mTitle" id="modalTitle">Saved places</div>
+        <div class="mTitle" id="modalTitle">—</div>
         <button class="btn slim" id="modalClose">✕</button>
       </div>
       <div id="modalBody"></div>
@@ -654,41 +596,35 @@
   <div id="app">
     <div id="map"></div>
 
+    <!-- Bottom sheet -->
     <div id="panel" class="card">
-      <div id="panelHandle" title="Drag / click to toggle">⋮⋮</div>
+      <div id="panelHandle" title="Drag up/down">⋮⋮</div>
 
-      <div id="panelInner">
-        <input id="q" class="input" placeholder="Search…" autocomplete="off" />
-        <button id="btn" class="btn primary" type="button">Find</button>
-        <button id="myLocBtn" class="btn" type="button">My location</button>
-        <button id="panelToggleBtn" class="btn" type="button" title="Open/Close panel">▾</button>
+      <div id="tabs">
+        <div class="tab active" data-tab="search">🔎 Search</div>
+        <div class="tab" data-tab="explore">✨ Explore</div>
+        <div class="tab" data-tab="saved">⭐ Saved</div>
+        <div class="tab" data-tab="settings">⚙️ Settings</div>
       </div>
 
-      <div id="suggestBox" class="card"></div>
+      <!-- SEARCH TAB -->
+      <div id="tab_search" style="margin-top:10px;">
+        <div class="row nowrap">
+          <input id="q" class="input" placeholder="Search…" autocomplete="off" />
+          <button id="micBtn" class="btn icon" type="button" title="Speech search">🎙️</button>
+          <button id="btn" class="btn primary" type="button">Find</button>
+        </div>
 
-      <div id="panelBody">
-        <div id="panelRow">
-          <select id="nearSel">
-            <option value="cafe">☕ Cafes near me</option>
-            <option value="food">🍕 Food near me</option>
-            <option value="pharmacy">💊 Pharmacies near me</option>
-            <option value="supermarket">🛒 Supermarkets near me</option>
-          </select>
-          <button id="nearBtn" class="btn" type="button">Near me</button>
-
+        <div class="row" style="margin-top:10px;">
+          <button id="myLocBtn" class="btn" type="button">My location</button>
           <select id="modeSel">
             <option value="walking">🚶 Walking</option>
             <option value="driving">🚗 Driving</option>
           </select>
-
-          <button id="savedBtn" class="btn" type="button">⭐ Saved places</button>
           <button id="trackBtn" class="btn" type="button">Live tracking: On</button>
-
           <button id="clearBtn" class="btn danger" type="button" style="display:none;">Clear</button>
           <span class="small" id="status">Ready</span>
         </div>
-
-        <div id="chips"></div>
 
         <div id="resultsWrap">
           <div id="resultsHeader">
@@ -698,9 +634,80 @@
           <div id="resultsList"></div>
         </div>
 
-        <div class="small" style="margin-top:10px; opacity:.9" id="offlineHint"></div>
-        <div class="small" style="margin-top:8px; opacity:.7">
-          Tip: Press <span class="kbd">Enter</span> to search • Tap the map to pin a destination
+        <div id="offlineHint" class="small" style="margin-top:10px; opacity:.9"></div>
+      </div>
+
+      <!-- EXPLORE TAB -->
+      <div id="tab_explore" style="margin-top:10px; display:none;">
+        <div class="small" style="opacity:.95">
+          Explore places around the map center (tap a category).
+        </div>
+
+        <div id="catRail" style="margin-top:10px;"></div>
+
+        <div class="row" style="margin-top:10px;">
+          <button id="exploreRefresh" class="btn slim" type="button">↻ Refresh at center</button>
+          <div class="spacer"></div>
+          <div class="small" id="exploreMeta">—</div>
+        </div>
+
+        <div id="exploreWrap" style="margin-top:10px; display:none;">
+          <div id="exploreList" style="
+            max-height: 240px; overflow:auto;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,.04);
+          "></div>
+        </div>
+      </div>
+
+      <!-- SAVED TAB -->
+      <div id="tab_saved" style="margin-top:10px; display:none;">
+        <div class="small" style="opacity:.95">
+          Manage saved places (Home / School / Work + custom).
+        </div>
+
+        <div id="miniActions">
+          <div class="chipBtn" id="savedManageBtn">⭐ Open saved places</div>
+          <div class="chipBtn" id="saveHomeBtn">🏠 Set Home</div>
+          <div class="chipBtn" id="saveSchoolBtn">🎓 Set School</div>
+          <div class="chipBtn" id="saveWorkBtn">💼 Set Work</div>
+          <div class="chipBtn" id="addPlaceBtn">➕ Add place</div>
+        </div>
+
+        <div class="small" style="margin-top:10px; opacity:.9">
+          Tip: select a destination first to save instantly, or tap “Set …” then tap the map.
+        </div>
+      </div>
+
+      <!-- SETTINGS TAB (placeholder) -->
+      <div id="tab_settings" style="margin-top:10px; display:none;">
+        <div class="small" style="opacity:.95">
+          Settings coming soon.
+        </div>
+
+        <div class="mItem" style="margin-top:12px;">
+          <div>
+            <b>Voice</b>
+            <div class="meta">We’ll add a proper voice selector here later.</div>
+          </div>
+          <button class="btn slim" type="button" id="voiceTestBtn">Test</button>
+        </div>
+
+        <div class="mItem">
+          <div>
+            <b>UI</b>
+            <div class="meta">Theme / density / advanced map options.</div>
+          </div>
+          <button class="btn slim" type="button" disabled>—</button>
+        </div>
+
+        <div class="mItem">
+          <div>
+            <b>About</b>
+            <div class="meta" id="aboutLine">—</div>
+          </div>
+          <button class="btn slim" type="button" id="resetUiBtn">Reset UI</button>
         </div>
       </div>
     </div>
@@ -728,15 +735,11 @@
   const splash = document.getElementById("splash");
   const qEl = document.getElementById("q");
   const btn = document.getElementById("btn");
+  const micBtn = document.getElementById("micBtn");
   const myLocBtn = document.getElementById("myLocBtn");
-  const nearSel = document.getElementById("nearSel");
-  const nearBtn = document.getElementById("nearBtn");
   const modeSel = document.getElementById("modeSel");
-  const savedBtn = document.getElementById("savedBtn");
   const trackBtn = document.getElementById("trackBtn");
-  const panelToggleBtn = document.getElementById("panelToggleBtn");
   const statusEl = document.getElementById("status");
-  const chipsEl = document.getElementById("chips");
   const resultsWrap = document.getElementById("resultsWrap");
   const resultsList = document.getElementById("resultsList");
   const resultsMeta = document.getElementById("resultsMeta");
@@ -745,87 +748,68 @@
   const loadingOverlay = document.getElementById("loadingOverlay");
   const loadingText = document.getElementById("loadingText");
   const toastWrap = document.getElementById("toastWrap");
-  const weatherCard = document.getElementById("weatherCard");
 
-  // Nav HUD
-  const navHud = document.getElementById("navHud");
-  const navPrimary = document.getElementById("navPrimary");
-  const navSecondary = document.getElementById("navSecondary");
-  const navMeta = document.getElementById("navMeta");
+  const topHud = document.getElementById("topHud");
+  const timeMain = document.getElementById("timeMain");
+  const timeSub  = document.getElementById("timeSub");
+  const weatherIconEl = document.getElementById("weatherIcon");
+  const weatherMain = document.getElementById("weatherMain");
+  const weatherSub  = document.getElementById("weatherSub");
+  const compassNeedle = document.getElementById("compassNeedle");
+  const compassMain = document.getElementById("compassMain");
+  const compassSub  = document.getElementById("compassSub");
+  const settingsBtn = document.getElementById("settingsBtn");
+
+  const navCard = document.getElementById("navCard");
+  const navInstr = document.getElementById("navInstr");
+  const navSub = document.getElementById("navSub");
   const navPrev = document.getElementById("navPrev");
   const navNext = document.getElementById("navNext");
   const navClose = document.getElementById("navClose");
   const navVoice = document.getElementById("navVoice");
   const navFollowBtn = document.getElementById("navFollow");
   const navMe = document.getElementById("navMe");
-  const navTurnSvg = document.getElementById("navTurnSvg");
 
-  // Zoom
   const zoomInBtn = document.getElementById("zoomIn");
   const zoomOutBtn = document.getElementById("zoomOut");
 
-  // Panel
   const panel = document.getElementById("panel");
   const panelHandle = document.getElementById("panelHandle");
   const panelRestore = document.getElementById("panelRestore");
   const offlineHint = document.getElementById("offlineHint");
 
-  // Compass
-  const compass = document.getElementById("compass");
-  const needle = document.getElementById("needle");
-
-  // Modal
   const modal = document.getElementById("modal");
   const modalClose = document.getElementById("modalClose");
   const modalTitle = document.getElementById("modalTitle");
   const modalBody = document.getElementById("modalBody");
 
-  // Placeholders
-  const PLACEHOLDERS = [
-    'Search: "lidl"', 'Search: "AB supermarket"', 'Search: "Σκλαβενίτης"', 'Search: "pharmacy"',
-    'Search: "φαρμακείο"', 'Search: "νοσοκομείο"', 'Search: "hospital"', 'Search: "souvlaki"',
-    'Search: "καφέ"', 'Search: "coffee"', 'Search: "gym"', 'Search: "piraeus port"',
-    'Search: "metro"', 'Search: "στάση λεωφορείου"', 'Search: "marousi"', 'Search: "glyfada"',
-    'Search: "exarchia"', 'Search: "monastiraki"', 'Search: "syntagma"', 'Search: "acropolis"',
-    'Search: "Πλάκα"', 'Search: "museum"', 'Search: "bank"', 'Search: "ATM"', 'Search: "parking"',
-    'Search: "ikea"', 'Search: "public store"', 'Search: "vodafone"', 'Search: "cosmote"'
-  ];
-  qEl.placeholder = PLACEHOLDERS[Math.floor(Math.random()*PLACEHOLDERS.length)];
+  const tabs = Array.from(document.querySelectorAll(".tab"));
+  const tab_search = document.getElementById("tab_search");
+  const tab_explore = document.getElementById("tab_explore");
+  const tab_saved = document.getElementById("tab_saved");
+  const tab_settings = document.getElementById("tab_settings");
 
-  // Map
-  const map = L.map("map", {
-    zoomControl: false,
-    maxBounds: ATHENS_BOUNDS,
-    maxBoundsViscosity: 0.65
-  }).fitBounds(ATHENS_BOUNDS);
+  const catRail = document.getElementById("catRail");
+  const exploreRefresh = document.getElementById("exploreRefresh");
+  const exploreMeta = document.getElementById("exploreMeta");
+  const exploreWrap = document.getElementById("exploreWrap");
+  const exploreList = document.getElementById("exploreList");
 
-  map.setMinZoom(map.getZoom() - 2);
+  const savedManageBtn = document.getElementById("savedManageBtn");
+  const saveHomeBtn = document.getElementById("saveHomeBtn");
+  const saveSchoolBtn = document.getElementById("saveSchoolBtn");
+  const saveWorkBtn = document.getElementById("saveWorkBtn");
+  const addPlaceBtn = document.getElementById("addPlaceBtn");
 
-  const canvasRenderer = L.canvas({ padding: 0.5 });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+  const voiceTestBtn = document.getElementById("voiceTestBtn");
+  const resetUiBtn = document.getElementById("resetUiBtn");
+  const aboutLine = document.getElementById("aboutLine");
 
-  const markersLayer = L.layerGroup().addTo(map);
-  const savedLayer = L.layerGroup().addTo(map);
-
-  let routeLine = null;
-  let destMarker = null;
-
-  // Tracking markers
-  let myDot = null;
-  let myArrow = null;
-
-  // Storage keys (v1.2), with migration from v1.3 if present
+  // Storage keys
   const SAVED_KEY = "athnav_saved_v12";
   const RECENT_KEY = "athnav_recent_v12";
   const UI_KEY = "athnav_ui_v12";
   const LAST_RESULTS_KEY = "athnav_last_results_v12";
-
-  const OLD_KEYS = {
-    SAVED: "athnav_saved_v13",
-    RECENT: "athnav_recent_v13",
-    UI: "athnav_ui_v13",
-    LAST: "athnav_last_results_v13",
-  };
 
   // State
   let results = [];
@@ -846,14 +830,8 @@
     voiceStyle: "off" // off | soft
   };
 
-  // For saving via map click
   let armSave = null; // {type:"fixed", key} | {type:"custom", name}
-
-  // Panel open state
   let panelOpen = true;
-
-  // Compass heading state
-  let deviceHeadingDeg = null; // null if unavailable
 
   // Utils
   function escapeHtml(s) {
@@ -863,23 +841,17 @@
   }
 
   let loadingShownAt = 0;
-  const MIN_LOADING_MS = 900;
-
+  const MIN_LOADING_MS = 800;
   function setLoading(on, text="Working…") {
     loadingText.textContent = text;
-
     if (on) {
       loadingShownAt = Date.now();
       loadingOverlay.style.display = "flex";
       return;
     }
-
     const elapsed = Date.now() - loadingShownAt;
     const wait = Math.max(0, MIN_LOADING_MS - elapsed);
-
-    setTimeout(() => {
-      loadingOverlay.style.display = "none";
-    }, wait);
+    setTimeout(() => { loadingOverlay.style.display = "none"; }, wait);
   }
 
   function toast(title, msg, type="info", ms=3200) {
@@ -896,6 +868,7 @@
     toastWrap.appendChild(el);
     setTimeout(() => { if (el.isConnected) el.remove(); }, ms);
   }
+
   function setStatus(s){ statusEl.textContent = s; }
 
   function loadJson(key, fallback) {
@@ -961,25 +934,111 @@
     return a;
   }
 
-  function isDesktop(){
-    return window.matchMedia("(min-width: 721px)").matches;
+  // Top HUD: time
+  function tickTime(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    timeMain.textContent = `${hh}:${mm}`;
+    timeSub.textContent = d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
   }
 
-  function setCompassVisible(on){
-    if (isDesktop()) { compass.classList.remove("show"); return; }
-    if (on) compass.classList.add("show");
-    else compass.classList.remove("show");
+  // Weather icon
+  function weatherIcon(code) {
+    code = Number(code);
+    if (code === 0) return "☀️";
+    if (code <= 2) return "⛅";
+    if (code === 3) return "☁️";
+    if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
+    if (code === 45 || code === 48) return "🌫️";
+    if (code >= 95) return "⛈️";
+    return "🌦️";
   }
 
-  function setNavActive(on){
-    document.body.classList.toggle("nav-active", !!on);
-    if (on) {
-      navHud.classList.add("show");
-      setCompassVisible(true);
-    } else {
-      navHud.classList.remove("show");
-      setCompassVisible(false);
+  // Weather: always show on HUD (dest > myLocation > map center)
+  async function updateWeatherSmart(){
+    const center = map.getCenter();
+    let lat = center.lat, lon = center.lng;
+    let label = "Map";
+
+    if (nav?.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+      lat = nav.dest.lat; lon = nav.dest.lon; label = "Dest";
+    } else if (myLocation && Number.isFinite(myLocation.lat) && Number.isFinite(myLocation.lon)){
+      lat = myLocation.lat; lon = myLocation.lon; label = "Me";
     }
+
+    weatherMain.textContent = "Weather";
+    weatherSub.textContent = "Loading…";
+
+    try{
+      const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+      const d = await r.json();
+      if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
+      const c = d.data.current;
+      const icon = weatherIcon(c.weather_code);
+      weatherIconEl.textContent = icon;
+      weatherMain.textContent = `${Math.round(c.temperature_2m)}°C`;
+      weatherSub.textContent = `${label} • feels ${Math.round(c.apparent_temperature)}°C`;
+    } catch {
+      weatherIconEl.textContent = "⛅";
+      weatherMain.textContent = "Weather";
+      weatherSub.textContent = "Unavailable";
+    }
+  }
+
+  // Compass: device orientation (if available) else use my bearing
+  let compassDeg = 0;
+  function degToCardinal(deg){
+    const dirs = ["N","NE","E","SE","S","SW","W","NW"];
+    const idx = Math.round(((deg % 360) / 45)) % 8;
+    return dirs[idx];
+  }
+  function setCompass(deg){
+    if (!Number.isFinite(deg)) return;
+    compassDeg = (deg + 360) % 360;
+    compassNeedle.style.transform = `rotate(${compassDeg}deg)`;
+    compassMain.textContent = degToCardinal(compassDeg);
+    compassSub.textContent = `${Math.round(compassDeg)}°`;
+  }
+
+  async function initCompass(){
+    // iOS needs permission
+    try{
+      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === "function"){
+        compassSub.textContent = "Tap to enable";
+        document.getElementById("compassPill").style.cursor = "pointer";
+        document.getElementById("compassPill").addEventListener("click", async ()=>{
+          try{
+            const res = await DeviceOrientationEvent.requestPermission();
+            if (res !== "granted") throw new Error("denied");
+            toast("Compass", "Enabled.", "ok", 1600);
+          } catch {
+            toast("Compass", "Permission denied.", "bad", 2400);
+          }
+        }, { once:true });
+      }
+    } catch {}
+
+    window.addEventListener("deviceorientationabsolute", (e)=>{
+      // absolute heading if available
+      const h = e.alpha;
+      if (Number.isFinite(h)) setCompass(360 - h);
+    });
+
+    window.addEventListener("deviceorientation", (e)=>{
+      // fallback
+      const h = e.alpha;
+      if (Number.isFinite(h)) setCompass(360 - h);
+    });
+
+    // fallback: use movement bearing
+    setInterval(()=>{
+      if (myLocation && Number.isFinite(myLocation.bearingDeg)){
+        // only use if device orientation didn’t really change
+        if (!("DeviceOrientationEvent" in window)) setCompass(myLocation.bearingDeg);
+      }
+    }, 1200);
   }
 
   // Offline hint
@@ -1027,24 +1086,6 @@
     } catch {}
   }
 
-  // ===== Migration (v1.3 -> v1.2 keys) =====
-  function migrateIfNeeded(){
-    try{
-      if (!localStorage.getItem(SAVED_KEY) && localStorage.getItem(OLD_KEYS.SAVED)){
-        localStorage.setItem(SAVED_KEY, localStorage.getItem(OLD_KEYS.SAVED));
-      }
-      if (!localStorage.getItem(RECENT_KEY) && localStorage.getItem(OLD_KEYS.RECENT)){
-        localStorage.setItem(RECENT_KEY, localStorage.getItem(OLD_KEYS.RECENT));
-      }
-      if (!localStorage.getItem(UI_KEY) && localStorage.getItem(OLD_KEYS.UI)){
-        localStorage.setItem(UI_KEY, localStorage.getItem(OLD_KEYS.UI));
-      }
-      if (!localStorage.getItem(LAST_RESULTS_KEY) && localStorage.getItem(OLD_KEYS.LAST)){
-        localStorage.setItem(LAST_RESULTS_KEY, localStorage.getItem(OLD_KEYS.LAST));
-      }
-    } catch {}
-  }
-
   // Saved places model
   function loadSaved(){
     const o = loadJson(SAVED_KEY, { home:null, school:null, work:null, custom:[] });
@@ -1054,7 +1095,6 @@
   function saveSaved(o){
     if (!o.custom) o.custom = [];
     saveJson(SAVED_KEY, o);
-    renderChips();
     renderSavedMarkers();
   }
   function setFixedPlace(key, lat, lon){
@@ -1083,8 +1123,38 @@
     saveSaved(saved);
   }
 
-  // Saved markers
-  function roundIcon(emoji){
+  // Map
+  const map = L.map("map", {
+    zoomControl: false,
+    maxBounds: ATHENS_BOUNDS,
+    maxBoundsViscosity: 0.65
+  }).fitBounds(ATHENS_BOUNDS);
+
+  map.setMinZoom(map.getZoom() - 2);
+
+  const canvasRenderer = L.canvas({ padding: 0.5 });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+  const markersLayer = L.layerGroup().addTo(map);
+  const savedLayer = L.layerGroup().addTo(map);
+
+  let routeLine = null;
+  let destMarker = null;
+
+  // Tracking markers
+  let myDot = null;
+  let myArrow = null;
+
+  // Recents / placeholders
+  const PLACEHOLDERS = [
+    'Search: "lidl"', 'Search: "Σκλαβενίτης"', 'Search: "pharmacy"', 'Search: "φαρμακείο"',
+    'Search: "νοσοκομείο"', 'Search: "souvlaki"', 'Search: "καφέ"', 'Search: "metro"',
+    'Search: "monastiraki"', 'Search: "syntagma"', 'Search: "acropolis"', 'Search: "hotel"'
+  ];
+  qEl.placeholder = PLACEHOLDERS[Math.floor(Math.random()*PLACEHOLDERS.length)];
+
+  // Icons for markers
+  function roundIcon(html){
     return L.divIcon({
       className: "",
       html: `
@@ -1093,408 +1163,40 @@
           width:34px;height:34px;border-radius:999px;
           border:1px solid rgba(255,255,255,.18);
           background:rgba(17,19,24,.92);
-          box-shadow: 0 10px 30px rgba(0,0,0,.35);
-          font-size:17px;
-        ">${escapeHtml(emoji)}</div>
+          box-shadow: var(--shadow);
+          font-size:16px;
+        ">${html}</div>
       `,
       iconSize:[34,34],
       iconAnchor:[17,17]
     });
   }
-  function customIcon(name){
-    const initial = (String(name||"C").trim()[0] || "★").toUpperCase();
-    return L.divIcon({
-      className:"",
-      html: `
-        <div style="
-          width:34px;height:34px;border-radius:999px;
-          border:1px solid rgba(255,255,255,.18);
-          background:rgba(17,19,24,.92);
-          box-shadow: 0 10px 30px rgba(0,0,0,.35);
-          display:flex;align-items:center;justify-content:center;
-          font-weight:900;font-size:14px;
-        ">${escapeHtml(initial)}</div>
-      `,
-      iconSize:[34,34],
-      iconAnchor:[17,17]
-    });
-  }
+
   function renderSavedMarkers(){
     savedLayer.clearLayers();
     const saved = loadSaved();
 
     const fixed = [
-      { key:"home", label:"Home", emoji:"🏠" },
-      { key:"school", label:"School", emoji:"🎓" },
-      { key:"work", label:"Work", emoji:"💼" },
+      { key:"home", label:"Home", icon:"🏠" },
+      { key:"school", label:"School", icon:"🎓" },
+      { key:"work", label:"Work", icon:"💼" },
     ];
 
     fixed.forEach(slot => {
       const p = saved[slot.key];
       if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return;
-      const m = L.marker([p.lat, p.lon], { icon: roundIcon(slot.emoji) }).addTo(savedLayer);
-      m.bindTooltip(`${slot.emoji} ${slot.label}`, { direction:"top", offset:[0,-10], opacity:0.95 });
+      const m = L.marker([p.lat, p.lon], { icon: roundIcon(slot.icon) }).addTo(savedLayer);
+      m.bindTooltip(`${slot.icon} ${slot.label}`, { direction:"top", offset:[0,-10], opacity:0.95 });
       m.on("click", ()=> setDestination({ lat:p.lat, lon:p.lon, name: slot.label, address:"" }));
     });
 
-    saved.custom.forEach(item => {
+    (saved.custom || []).forEach(item => {
       if (!Number.isFinite(item.lat) || !Number.isFinite(item.lon)) return;
-      const m = L.marker([item.lat, item.lon], { icon: customIcon(item.name) }).addTo(savedLayer);
+      const initial = (String(item.name||"★").trim()[0] || "★").toUpperCase();
+      const m = L.marker([item.lat, item.lon], { icon: roundIcon(`<b style="font-size:14px">${escapeHtml(initial)}</b>`) }).addTo(savedLayer);
       m.bindTooltip(item.name, { direction:"top", offset:[0,-10], opacity:0.95 });
       m.on("click", ()=> setDestination({ lat:item.lat, lon:item.lon, name: item.name, address:"" }));
     });
-  }
-
-  // Recents
-  function loadRecent(){
-    const arr = loadJson(RECENT_KEY, []);
-    return Array.isArray(arr) ? arr : [];
-  }
-  function saveRecent(q){
-    const cur = loadRecent().filter(x => String(x).toLowerCase() !== String(q).toLowerCase());
-    cur.unshift(q);
-    saveJson(RECENT_KEY, cur.slice(0, 8));
-    renderChips();
-  }
-
-  // Chips UI
-  function renderChips(){
-    const rec = loadRecent();
-    const saved = loadSaved();
-
-    const parts = [];
-    parts.push(`<span class="pill" data-fixed="home">🏠 ${saved.home ? "Home" : "Set Home"}</span>`);
-    parts.push(`<span class="pill" data-fixed="school">🎓 ${saved.school ? "School" : "Set School"}</span>`);
-    parts.push(`<span class="pill" data-fixed="work">💼 ${saved.work ? "Work" : "Set Work"}</span>`);
-    parts.push(`<span class="pill" data-custom-add="1">⭐ Add place</span>`);
-
-    rec.slice(0,6).forEach((s,i) => parts.push(`<span class="pill" data-recent="${i}">${escapeHtml(s)}</span>`));
-    chipsEl.innerHTML = parts.join("");
-
-    chipsEl.querySelectorAll("[data-recent]").forEach(el => {
-      el.addEventListener("click", ()=>{
-        const idx = Number(el.getAttribute("data-recent"));
-        const q = rec[idx];
-        qEl.value = q;
-        doSearch(q);
-      });
-    });
-
-    chipsEl.querySelectorAll("[data-fixed]").forEach(el => {
-      el.addEventListener("click", ()=>{
-        const key = el.getAttribute("data-fixed");
-        if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
-          setFixedPlace(key, nav.dest.lat, nav.dest.lon);
-          toast("Saved", `${key} saved from selected destination.`, "ok");
-          return;
-        }
-        armSave = { type:"fixed", key };
-        toast("Set saved place", `Tap on the map to set ${key}.`, "info", 5200);
-      });
-    });
-
-    chipsEl.querySelector("[data-custom-add]")?.addEventListener("click", ()=>{
-      const name = prompt("Name this place (e.g., Gym, Grandma, Favorite cafe):");
-      if (!name) return;
-
-      if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
-        addCustomPlace(name, nav.dest.lat, nav.dest.lon);
-        toast("Saved", `"${name}" saved from selected destination.`, "ok");
-        return;
-      }
-
-      armSave = { type:"custom", name };
-      toast("Add place", `Tap on the map to place: "${name}"`, "info", 5200);
-    });
-  }
-
-  // ===== Voice (soft defaults, less robotic) =====
-  let cachedVoices = [];
-  function refreshVoices(){
-    cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
-  }
-  if ("speechSynthesis" in window){
-    refreshVoices();
-    speechSynthesis.onvoiceschanged = refreshVoices;
-  }
-
-  function pickVoice(){
-    if (!cachedVoices.length) refreshVoices();
-    const voices = cachedVoices || [];
-    const greek = voices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
-    const preferNatural = (arr) => arr.find(v => /natural|neural/i.test(v.name || "")) || null;
-    const pickAny = (arr) => arr[0] || null;
-    return preferNatural(greek) || pickAny(greek) || preferNatural(voices) || pickAny(voices) || null;
-  }
-
-  function speak(text){
-    try{
-      if (nav.voiceStyle === "off") return;
-      if (!("speechSynthesis" in window)) return;
-
-      const voice = pickVoice();
-      const u = new SpeechSynthesisUtterance(String(text));
-      if (voice){
-        u.voice = voice;
-        u.lang = voice.lang || "en-US";
-      } else {
-        u.lang = "en-US";
-      }
-
-      // Softer, calmer
-      u.rate = 1.02;
-      u.pitch = 1.00;
-      u.volume = 0.95;
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch {}
-  }
-
-  function updateVoiceBtn(){
-    navVoice.textContent = nav.voiceStyle === "off" ? "Voice: Off" : "Voice: Soft";
-  }
-
-  // ===== Weather =====
-  function weatherIcon(code) {
-    code = Number(code);
-    if (code === 0) return "☀️";
-    if (code <= 2) return "⛅";
-    if (code === 3) return "☁️";
-    if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️";
-    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️";
-    if (code === 45 || code === 48) return "🌫️";
-    if (code >= 95) return "⛈️";
-    return "🌦️";
-  }
-
-  async function updateWeather(lat, lon){
-    if (document.body.classList.contains("nav-active")) return; // keep clean during nav
-
-    weatherCard.style.display = "block";
-    weatherCard.innerHTML = `
-      <div style="font-weight:900">Weather</div>
-      <div class="line">Loading…</div>
-    `;
-    try{
-      const r = await fetch(`/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
-      const d = await r.json();
-      if (!d?.ok || !d?.data?.current) throw new Error("weather unavailable");
-      const c = d.data.current;
-      const icon = weatherIcon(c.weather_code);
-
-      weatherCard.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="font-weight:900">Weather</div>
-          <div style="opacity:.9">${icon}</div>
-        </div>
-        <div class="big">${Math.round(c.temperature_2m)}°C <span class="small">(feels ${Math.round(c.apparent_temperature)}°C)</span></div>
-        <div class="line">Wind ${Math.round(c.wind_speed_10m)} km/h</div>
-        <div class="tiny">${escapeHtml(String(c.time||"").replace("T"," "))}</div>
-      `;
-    } catch {
-      weatherCard.innerHTML = `
-        <div style="font-weight:900">Weather</div>
-        <div class="line" style="color:rgba(255,77,77,.9)">Unavailable</div>
-      `;
-    }
-  }
-
-  // ===== Navigation visuals (SVG) =====
-  function setTurnIcon(kind){
-    // kind: "straight" | "left" | "right" | "uturn" | "roundabout" | "arrive" | "depart"
-    const icon = (k) => {
-      if (k === "left") return `
-        <path d="M14 19v-7.2c0-2.2-1.8-4-4-4H7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M7 7l3-3M7 7l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-      if (k === "right") return `
-        <path d="M10 19v-7.2c0-2.2 1.8-4 4-4h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M17 7l-3-3M17 7l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-      if (k === "uturn") return `
-        <path d="M12 20v-9c0-2.8 2.2-5 5-5h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M18 6l-3-3M18 6l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-      if (k === "arrive") return `
-        <path d="M6 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M9 18V8l6-2v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="14" cy="9" r="1" fill="currentColor"/>
-      `;
-      if (k === "depart") return `
-        <path d="M12 20V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M12 6l-4 4M12 6l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-      if (k === "roundabout") return `
-        <path d="M12 4a8 8 0 1 0 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M20 12l-3-2M20 12l-2-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-      // straight default
-      return `
-        <path d="M12 20V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M12 6l-4 4M12 6l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      `;
-    };
-
-    navTurnSvg.innerHTML = icon(kind);
-  }
-
-  // Routing + nav steps
-  function maneuverKind(step){
-    const m = step.maneuver || {};
-    const type = (m.type || "").toLowerCase();
-    const mod = (m.modifier || "").toLowerCase();
-
-    if (type === "arrive") return "arrive";
-    if (type === "depart") return "depart";
-    if (type === "roundabout") return "roundabout";
-    if (type === "uturn") return "uturn";
-    if (mod.includes("left")) return "left";
-    if (mod.includes("right")) return "right";
-    return "straight";
-  }
-
-  function buildInstruction(step){
-    const m = step.maneuver || {};
-    const type = (m.type || "").toLowerCase();
-    const mod  = (m.modifier || "").toLowerCase();
-    const name = step.name ? ` onto ${step.name}` : "";
-
-    if (type === "depart") return `Start${name}`;
-    if (type === "arrive") return `Arrive at destination`;
-    if (type === "roundabout") return `At roundabout, take exit${name}`;
-    if (type === "merge") return `Merge${name}`;
-    if (type === "uturn") return `Make a U-turn${name}`;
-
-    if (type === "turn") {
-      if (mod) return `Turn ${mod}${name}`;
-      return `Turn${name}`;
-    }
-    if (type === "continue" || type === "new name" || type === "straight") {
-      return `Continue${name}`;
-    }
-    if (type === "fork") {
-      if (mod) return `Keep ${mod}${name}`;
-      return `Keep${name}`;
-    }
-    return step.name ? `Go on ${step.name}` : "Continue";
-  }
-
-  async function startRoute(){
-    if (!myLocation || !nav.dest) return;
-
-    nav.mode = modeSel.value || "walking";
-    setStatus("Calculating route…");
-    setNavActive(true);
-    navPrimary.textContent = "Calculating route…";
-    navSecondary.textContent = "—";
-    navMeta.textContent = "—";
-    setTurnIcon("depart");
-
-    try{
-      const url =
-        `https://router.project-osrm.org/route/v1/${nav.mode}/` +
-        `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
-        `?overview=full&geometries=geojson&steps=true`;
-
-      const r = await fetch(url);
-      const j = await r.json();
-      const route = j.routes?.[0];
-      if (!route) throw new Error("no route");
-
-      const coords = route.geometry?.coordinates || [];
-      const latlngs = coords.map(c => [c[1], c[0]]);
-      if (routeLine) routeLine.remove();
-      routeLine = L.polyline(latlngs, { weight: 5, opacity: .9 }).addTo(map);
-
-      const leg = route.legs?.[0];
-      const steps = Array.isArray(leg?.steps) ? leg.steps : [];
-      nav.steps = steps.map(s => ({
-        distance: s.distance,
-        duration: s.duration,
-        name: s.name || "",
-        maneuver: s.maneuver || {},
-        instruction: buildInstruction(s),
-        kind: maneuverKind(s)
-      }));
-
-      nav.stepIndex = 0;
-      nav.distanceM = route.distance;
-      nav.durationS = estimateDurationSeconds(nav.distanceM, nav.mode);
-
-      setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
-      showNavStep();
-      cacheUiState();
-    } catch {
-      setStatus("Route failed.");
-      toast("Route error", "Could not calculate route. Try again.", "bad");
-      nav.steps = [];
-      setNavActive(false);
-    }
-  }
-
-  function showNavStep(){
-    if (!nav.steps.length) return;
-
-    const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
-    nav.stepIndex = i;
-
-    const s = nav.steps[i];
-    setTurnIcon(s.kind || "straight");
-
-    navPrimary.textContent = s.instruction;
-    navSecondary.textContent = `${formatDistanceMeters(s.distance)} • Step ${i+1}/${nav.steps.length}`;
-
-    navMeta.textContent = `Total ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} • ${nav.mode}`;
-
-    navPrev.disabled = (i === 0);
-    navNext.disabled = (i === nav.steps.length - 1);
-
-    // Voice: speak less aggressively
-    if (nav.voiceStyle !== "off") {
-      // avoid talking for tiny steps
-      if (Number(s.distance) >= 25 || s.kind === "arrive") speak(s.instruction);
-    }
-
-    if (followOn){
-      const loc = s.maneuver?.location;
-      if (Array.isArray(loc) && loc.length === 2){
-        map.panTo([loc[1], loc[0]], { animate:true });
-      }
-    }
-  }
-
-  function stopNav(){
-    nav.steps = [];
-    nav.stepIndex = 0;
-    nav.distanceM = null;
-    nav.durationS = null;
-    setNavActive(false);
-  }
-
-  // Destination marker
-  function setDestination(x){
-    if (!x) return;
-
-    let dest = { ...x };
-    if (!inAthens(dest.lat, dest.lon)){
-      const c = clampToAthens(dest.lat, dest.lon);
-      dest.lat = c.lat; dest.lon = c.lon;
-      toast("Outside Athens", "Clamped inside Athens bounds.", "info");
-    }
-
-    nav.dest = dest;
-
-    if (destMarker) destMarker.remove();
-    destMarker = L.marker([dest.lat, dest.lon]).addTo(map);
-    destMarker.bindTooltip(dest.name || "Destination", { direction:"top", offset:[0,-10], opacity:0.95 });
-    destMarker.bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
-
-    map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
-    updateWeather(dest.lat, dest.lon);
-
-    if (myLocation) startRoute();
-    cacheUiState();
   }
 
   // Results rendering
@@ -1558,7 +1260,6 @@
 
   // Suggestions (debounced)
   let suggestTimer = null;
-
   async function fetchSuggestions(q){
     if (!q || q.length < 2) { suggestBox.style.display="none"; return; }
     try{
@@ -1606,14 +1307,207 @@
   }
   function hideSuggest(){ suggestBox.style.display="none"; }
 
-  // Search + Nearby
+  // Routing + nav steps
+  function maneuverIcon(step){
+    const m = step.maneuver || {};
+    const type = (m.type || "").toLowerCase();
+    const mod = (m.modifier || "").toLowerCase();
+    if (type === "arrive") return "🏁";
+    if (type === "depart") return "🚩";
+    if (type === "roundabout") return "🔄";
+    if (type === "uturn") return "↩️";
+    if (mod.includes("left")) return "⬅️";
+    if (mod.includes("right")) return "➡️";
+    if (mod.includes("straight")) return "⬆️";
+    if (type === "merge") return "⤴️";
+    if (type === "fork") return "🍴";
+    if (type === "continue") return "⬆️";
+    return "➡️";
+  }
+
+  function buildInstruction(step){
+    const m = step.maneuver || {};
+    const type = (m.type || "").toLowerCase();
+    const mod  = (m.modifier || "").toLowerCase();
+    const name = step.name ? ` onto ${step.name}` : "";
+
+    if (type === "depart") return `Start${name}`;
+    if (type === "arrive") return `Arrive at destination`;
+    if (type === "roundabout") return `At roundabout, take exit${name}`;
+    if (type === "merge") return `Merge${name}`;
+    if (type === "uturn") return `Make a U-turn${name}`;
+
+    if (type === "turn") {
+      if (mod) return `Turn ${mod}${name}`;
+      return `Turn${name}`;
+    }
+    if (type === "continue" || type === "new name" || type === "straight") return `Continue${name}`;
+    if (type === "fork") return mod ? `Keep ${mod}${name}` : `Keep${name}`;
+
+    return step.name ? `Go on ${step.name}` : "Continue";
+  }
+
+  // Voice
+  let cachedVoices = [];
+  function refreshVoices(){
+    cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
+  }
+  if ("speechSynthesis" in window){
+    refreshVoices();
+    speechSynthesis.onvoiceschanged = refreshVoices;
+  }
+
+  function pickBestVoice(){
+    if (!cachedVoices.length) refreshVoices();
+    // Prefer Greek if available, otherwise prefer "natural"/"neural"
+    const greek = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
+    const preferNatural = (arr) => arr.find(v => /natural|neural/i.test(v.name || "")) || null;
+    const pickFirst = (arr) => arr[0] || null;
+    return preferNatural(greek) || pickFirst(greek) || preferNatural(cachedVoices) || pickFirst(cachedVoices) || null;
+  }
+
+  function speak(text){
+    try{
+      if (nav.voiceStyle === "off") return;
+      if (!("speechSynthesis" in window)) return;
+
+      const voice = pickBestVoice();
+      const u = new SpeechSynthesisUtterance(String(text));
+
+      if (voice){
+        u.voice = voice;
+        u.lang = voice.lang || "en-US";
+      }
+
+      // This can still sound robotic depending on the phone/browser voice.
+      u.rate = 0.95;
+      u.pitch = 1.02;
+      u.volume = 0.92;
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  function updateVoiceBtn(){
+    navVoice.textContent = nav.voiceStyle === "off" ? "🔈 Voice: Off" : "🔈 Voice: Soft";
+  }
+
+  async function startRoute(){
+    if (!myLocation || !nav.dest) return;
+
+    nav.mode = modeSel.value || "walking";
+    setStatus("Calculating route…");
+    navCard.style.display = "block";
+    navInstr.textContent = "Calculating route…";
+    navSub.textContent = "—";
+
+    try{
+      const url =
+        `https://router.project-osrm.org/route/v1/${nav.mode}/` +
+        `${myLocation.lon},${myLocation.lat};${nav.dest.lon},${nav.dest.lat}` +
+        `?overview=full&geometries=geojson&steps=true`;
+
+      const r = await fetch(url);
+      const j = await r.json();
+      const route = j.routes?.[0];
+      if (!route) throw new Error("no route");
+
+      const coords = route.geometry?.coordinates || [];
+      const latlngs = coords.map(c => [c[1], c[0]]);
+      if (routeLine) routeLine.remove();
+      routeLine = L.polyline(latlngs).addTo(map);
+
+      const leg = route.legs?.[0];
+      const steps = Array.isArray(leg?.steps) ? leg.steps : [];
+      nav.steps = steps.map(s => ({
+        distance: s.distance,
+        duration: s.duration,
+        name: s.name || "",
+        maneuver: s.maneuver || {},
+        instruction: buildInstruction(s)
+      }));
+
+      nav.stepIndex = 0;
+      nav.distanceM = route.distance;
+      nav.durationS = estimateDurationSeconds(nav.distanceM, nav.mode);
+
+      setStatus(`Route: ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} (${nav.mode})`);
+      showNavStep();
+      cacheUiState();
+    } catch {
+      setStatus("Route failed.");
+      toast("Route error", "Could not calculate route. Try again.", "bad");
+      nav.steps = [];
+      navCard.style.display = "none";
+    }
+  }
+
+  function showNavStep(){
+    if (!nav.steps.length) return;
+
+    const i = Math.min(Math.max(nav.stepIndex, 0), nav.steps.length - 1);
+    nav.stepIndex = i;
+
+    const s = nav.steps[i];
+    const icon = maneuverIcon(s);
+    navInstr.textContent = `${icon} ${s.instruction}`;
+
+    navSub.textContent =
+      `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
+
+    navPrev.disabled = (i === 0);
+    navNext.disabled = (i === nav.steps.length - 1);
+
+    if (nav.voiceStyle !== "off") speak(s.instruction);
+
+    if (followOn){
+      const loc = s.maneuver?.location;
+      if (Array.isArray(loc) && loc.length === 2){
+        map.panTo([loc[1], loc[0]], { animate:true });
+      }
+    }
+  }
+
+  function stopNav(){
+    nav.steps = [];
+    nav.stepIndex = 0;
+    nav.distanceM = null;
+    nav.durationS = null;
+    navCard.style.display = "none";
+  }
+
+  // Destination marker
+  function setDestination(x){
+    if (!x) return;
+
+    let dest = { ...x };
+    if (!inAthens(dest.lat, dest.lon)){
+      const c = clampToAthens(dest.lat, dest.lon);
+      dest.lat = c.lat; dest.lon = c.lon;
+      toast("Outside Athens", "Clamped inside Athens bounds.", "info");
+    }
+
+    nav.dest = dest;
+
+    if (destMarker) destMarker.remove();
+    destMarker = L.marker([dest.lat, dest.lon]).addTo(map);
+    destMarker.bindTooltip(dest.name || "Destination", { direction:"top", offset:[0,-10], opacity:0.95 });
+    destMarker.bindPopup(`<b>${escapeHtml(dest.name||"Destination")}</b>`).openPopup();
+
+    map.setView([dest.lat, dest.lon], Math.max(map.getZoom(), 15));
+    updateWeatherSmart();
+
+    if (myLocation) startRoute();
+    cacheUiState();
+  }
+
+  // Search
   async function doSearch(qOverride=null){
     const q = (qOverride ?? qEl.value).trim();
     if (!q) return;
 
     hideSuggest();
-    saveRecent(q);
-
     setLoading(true, "Searching…");
     setStatus("Searching…");
 
@@ -1627,12 +1521,7 @@
 
       const list = Array.isArray(d?.results) ? d.results : [];
       const filtered = list
-        .map(x => ({
-          name: x.name,
-          address: x.address,
-          lat: Number(x.lat),
-          lon: Number(x.lon),
-        }))
+        .map(x => ({ name: x.name, address: x.address, lat: Number(x.lat), lon: Number(x.lon) }))
         .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
         .filter(x => inAthens(x.lat, x.lon));
 
@@ -1673,19 +1562,50 @@
     cacheUiState();
   }
 
-  async function nearMe(){
-    if (!myLocation){
-      toast("Need location", "Tap My location (or allow location) first.", "bad");
-      return;
-    }
+  // Explore (recommendation-ish): nearby around map center by category
+  const EXPLORE_CATS = [
+    { key:"cafe", label:"☕ Cafes" },
+    { key:"food", label:"🍕 Food" },
+    { key:"restaurant", label:"🍽️ Restaurants" },
+    { key:"pharmacy", label:"💊 Pharmacy" },
+    { key:"supermarket", label:"🛒 Supermarkets" },
+    { key:"hotel", label:"🏨 Hotels" },
+    { key:"monument", label:"🏛️ Monuments" },
+    { key:"museum", label:"🖼️ Museums" },
+    { key:"park", label:"🌳 Parks" },
+    { key:"atm", label:"🏧 ATM" }
+  ];
 
-    hideSuggest();
-    setLoading(true, "Searching near you…");
-    setStatus("Searching near you…");
+  let exploreCat = "cafe";
+  let exploreItems = [];
 
+  function renderCatRail(){
+    catRail.innerHTML = EXPLORE_CATS.map(c => `
+      <div class="cat ${c.key === exploreCat ? "active":""}" data-cat="${c.key}">
+        ${escapeHtml(c.label)}
+      </div>
+    `).join("");
+
+    catRail.querySelectorAll("[data-cat]").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        exploreCat = el.getAttribute("data-cat");
+        renderCatRail();
+        exploreFetch();
+      });
+    });
+  }
+
+  async function exploreFetch(){
+    const center = map.getCenter();
+    const lat = center.lat;
+    const lon = center.lng;
+
+    exploreMeta.textContent = "Loading…";
+    exploreWrap.style.display = "none";
+
+    setLoading(true, "Exploring…");
     try{
-      const cat = nearSel.value;
-      const r = await fetch(`/nearby?lat=${encodeURIComponent(myLocation.lat)}&lon=${encodeURIComponent(myLocation.lon)}&cat=${encodeURIComponent(cat)}`);
+      const r = await fetch(`/nearby?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&cat=${encodeURIComponent(exploreCat)}`);
       const d = await r.json();
 
       const list = Array.isArray(d?.results) ? d.results : [];
@@ -1694,38 +1614,53 @@
         .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon))
         .filter(x => inAthens(x.lat, x.lon));
 
-      results = filtered;
-      selectedIndex = results.length ? 0 : -1;
+      exploreItems = filtered.slice(0, 40);
 
-      saveJson(LAST_RESULTS_KEY, results.slice(0,200));
-
-      if (!results.length){
-        setStatus("Nothing found near you.");
-        toast("No nearby results", "Try a different category.", "info");
-        resultsWrap.style.display = "none";
-        clearBtn.style.display = "none";
-        markersLayer.clearLayers();
-        setLoading(false);
+      if (!exploreItems.length){
+        exploreMeta.textContent = "No results";
+        exploreWrap.style.display = "none";
+        toast("Explore", "Nothing found around the center for this category.", "info", 2600);
         return;
       }
 
-      setStatus(`Found ${results.length} nearby.`);
-      renderMarkers();
-      renderResults();
-      pickResult(0);
+      exploreMeta.textContent = `${exploreItems.length} found`;
+      exploreWrap.style.display = "block";
+
+      exploreList.innerHTML = exploreItems.map((x,i)=>{
+        const addr = normalizeAddress(x.name, x.address);
+        return `
+          <div class="res" data-exp="${i}">
+            <div class="resTitle">${escapeHtml(x.name || "Place")}</div>
+            ${addr ? `<div class="resMeta">${escapeHtml(addr)}</div>` : ``}
+          </div>
+        `;
+      }).join("");
+
+      exploreList.querySelectorAll("[data-exp]").forEach(el=>{
+        el.addEventListener("click", ()=>{
+          const idx = Number(el.getAttribute("data-exp"));
+          const pick = exploreItems[idx];
+          if (!pick) return;
+          setDestination(pick);
+          // also copy into results so it behaves consistent
+          results = exploreItems.slice(0, 200);
+          selectedIndex = idx;
+          renderMarkers();
+          renderResults();
+          switchTab("search");
+        });
+      });
+
     } catch {
-      setStatus("Network error.");
-      toast("Network error", "Could not fetch nearby places.", "bad");
+      exploreMeta.textContent = "Network error";
+      toast("Explore", "Could not load explore results.", "bad", 2600);
     } finally {
       setLoading(false);
     }
-
-    cacheUiState();
   }
 
   // Live tracking + arrow
   function arrowIcon(deg){
-    const d = Number.isFinite(deg) ? deg : 0;
     return L.divIcon({
       className:"",
       html: `
@@ -1734,11 +1669,9 @@
           border:1px solid rgba(255,255,255,.18);
           background:rgba(17,19,24,.92);
           display:flex;align-items:center;justify-content:center;
-          box-shadow: 0 10px 30px rgba(0,0,0,.35);
+          box-shadow: var(--shadow);
         ">
-          <svg viewBox="0 0 24 24" width="18" height="18" style="transform: rotate(${d}deg); opacity:.95">
-            <path d="M12 3l6 18-6-4-6 4 6-18z" fill="rgba(255,255,255,.92)"/>
-          </svg>
+          <div style="transform: rotate(${deg}deg); font-size:18px;">➤</div>
         </div>
       `,
       iconSize:[34,34],
@@ -1800,12 +1733,13 @@
 
         setMyMarkers(use.lat, use.lon, b);
 
-        // Compass: if device heading unavailable, show GPS bearing
-        if (deviceHeadingDeg == null) {
-          needle.style.transform = `rotate(${(-b)}deg)`;
-        }
-
         if (followOn) map.panTo([use.lat, use.lon], { animate:true });
+
+        // keep HUD weather relevant
+        // (throttle)
+        if (nav.dest == null && (now % 15000) < 1200){
+          updateWeatherSmart();
+        }
 
         if (nav.dest && (Date.now() - myLocation.lastRerouteAt) > 12000){
           myLocation.lastRerouteAt = Date.now();
@@ -1842,49 +1776,6 @@
     window.removeEventListener("pointerdown", armTrackingOnce, true);
   }
 
-  // Device compass (best effort)
-  async function initDeviceCompass(){
-    if (isDesktop()) return;
-
-    const handler = (e) => {
-      // iOS: webkitCompassHeading is 0..360 where 0 is North
-      // Android: alpha is 0..360 where 0 is North (device dependent; still useful)
-      let heading = null;
-      if (typeof e.webkitCompassHeading === "number") heading = e.webkitCompassHeading;
-      else if (typeof e.alpha === "number") heading = e.alpha;
-
-      if (!Number.isFinite(heading)) return;
-      deviceHeadingDeg = heading;
-
-      // Rotate needle opposite so it points North relative to screen
-      needle.style.transform = `rotate(${(-heading)}deg)`;
-    };
-
-    try{
-      if (typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function"){
-        // iOS permission flow
-        // Ask only when user taps compass
-        compass.addEventListener("click", async ()=>{
-          try{
-            const perm = await DeviceOrientationEvent.requestPermission();
-            if (perm === "granted"){
-              window.addEventListener("deviceorientation", handler, true);
-              toast("Compass", "Compass enabled.", "ok", 1800);
-            } else {
-              toast("Compass", "Permission denied.", "bad", 2400);
-            }
-          } catch {
-            toast("Compass", "Could not enable compass.", "bad", 2400);
-          }
-        }, { once:false });
-      } else if ("DeviceOrientationEvent" in window){
-        window.addEventListener("deviceorientationabsolute", handler, true);
-        window.addEventListener("deviceorientation", handler, true);
-      }
-    } catch {}
-  }
-
   // Map click
   map.on("click", (e) => {
     const { lat, lng } = e.latlng;
@@ -1919,30 +1810,40 @@
     resultsList.innerHTML = "";
     resultsMeta.textContent = "—";
     setStatus("Ready");
-    if (!document.body.classList.contains("nav-active")) weatherCard.style.display = "none";
+    updateWeatherSmart();
     cacheUiState();
   }
 
-  // Panel slide
+  // Panel slide + layout clearance for zoom
+  function setPanelClearance(px){
+    document.documentElement.style.setProperty("--panel-clear", px + "px");
+  }
+
   function setPanelOpen(open){
     panelOpen = !!open;
 
-    if (isDesktop()){
-      panel.style.transform = panelOpen ? "translateX(0)" : "translateX(112%)";
+    const desktop = window.matchMedia("(min-width: 900px)").matches;
+
+    if (desktop){
+      panel.style.transform = panelOpen ? "translateX(0)" : "translateX(110%)";
+      panelRestore.classList.toggle("show", !panelOpen);
+      setPanelClearance(190);
     } else {
       panel.style.transform = panelOpen ? "translateY(0)" : "translateY(78%)";
+      panelRestore.classList.toggle("show", !panelOpen);
+      // approximate clearance based on open state
+      setPanelClearance(panelOpen ? 250 : 120);
     }
 
-    panelToggleBtn.textContent = panelOpen ? "▾" : "▸";
-    panelRestore.classList.toggle("show", !panelOpen);
     setTimeout(()=>map.invalidateSize(), 80);
-    cacheUiState();
   }
 
   function initPanelDrag(){
     let startY = 0;
     let startTransform = 0;
     let dragging = false;
+
+    const isDesktop = () => window.matchMedia("(min-width: 900px)").matches;
 
     panelHandle.addEventListener("pointerdown", (e)=>{
       dragging = true;
@@ -1962,6 +1863,10 @@
       next = Math.min(Math.max(next, 0), 82);
       panel.style.transition = "none";
       panel.style.transform = `translateY(${next}%)`;
+      // update clearance continuously
+      const openPct = Math.max(0, 82 - next) / 82; // rough
+      const px = 120 + openPct * 170;
+      setPanelClearance(Math.round(px));
     });
 
     panelHandle.addEventListener("pointerup", ()=>{
@@ -1971,7 +1876,7 @@
       if (isDesktop()) return;
       const m = panel.style.transform.match(/translateY\(([-0-9.]+)%\)/);
       const cur = m ? Number(m[1]) : 0;
-      if (cur > 40) setPanelOpen(false);
+      if (cur > 42) setPanelOpen(false);
       else setPanelOpen(true);
     });
 
@@ -1981,7 +1886,27 @@
     });
   }
 
-  // Modal
+  panelRestore.addEventListener("click", ()=> setPanelOpen(true));
+
+  // Tabs
+  function switchTab(name){
+    tabs.forEach(t => t.classList.toggle("active", t.getAttribute("data-tab") === name));
+    tab_search.style.display = (name === "search") ? "block" : "none";
+    tab_explore.style.display = (name === "explore") ? "block" : "none";
+    tab_saved.style.display = (name === "saved") ? "block" : "none";
+    tab_settings.style.display = (name === "settings") ? "block" : "none";
+
+    if (name === "explore"){
+      // lazy load explore on first open
+      if (!catRail.innerHTML) renderCatRail();
+      if (!exploreItems.length) exploreFetch();
+    }
+  }
+  tabs.forEach(t=>{
+    t.addEventListener("click", ()=> switchTab(t.getAttribute("data-tab")));
+  });
+
+  // Modal helpers
   function openModal(title, html){
     modalTitle.textContent = title;
     modalBody.innerHTML = html;
@@ -1991,6 +1916,7 @@
   modalClose.addEventListener("click", closeModal);
   modal.addEventListener("click", (e)=>{ if (e.target === modal) closeModal(); });
 
+  // Saved manager modal
   function renderSavedManager(){
     const saved = loadSaved();
     const fixed = [
@@ -2126,7 +2052,6 @@
         voiceStyle: nav.voiceStyle || "off",
         followOn: !!followOn,
         trackingOn: !!trackingOn,
-        panelOpen: !!panelOpen,
         lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
         lastResults: results.slice(0, 200),
         selectedIndex
@@ -2144,10 +2069,9 @@
     if (state.voiceStyle) nav.voiceStyle = state.voiceStyle;
     if (typeof state.followOn === "boolean") followOn = state.followOn;
     if (typeof state.trackingOn === "boolean") trackingOn = state.trackingOn;
-    if (typeof state.panelOpen === "boolean") panelOpen = state.panelOpen;
 
     updateVoiceBtn();
-    navFollowBtn.textContent = followOn ? "Follow: On" : "Follow: Off";
+    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
     setTrackingBtn();
 
     if (Array.isArray(state.lastResults) && state.lastResults.length){
@@ -2161,20 +2085,58 @@
 
     if (state.lastDest && Number.isFinite(state.lastDest.lat) && Number.isFinite(state.lastDest.lon)){
       nav.dest = { ...state.lastDest };
-      updateWeather(nav.dest.lat, nav.dest.lon);
     }
   }
 
-  // Buttons wiring
+  // Speech-to-search (Web Speech API)
+  function startSpeechSearch(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR){
+      toast("Speech search", "Not supported on this browser.", "bad", 2600);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "el-GR"; // you can switch later in settings
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    micBtn.textContent = "⏺️";
+    micBtn.disabled = true;
+
+    rec.onresult = (e)=>{
+      const text = e.results?.[0]?.[0]?.transcript || "";
+      if (text.trim()){
+        qEl.value = text.trim();
+        doSearch(text.trim());
+      }
+    };
+    rec.onerror = ()=>{
+      toast("Speech search", "Could not capture audio.", "bad", 2400);
+    };
+    rec.onend = ()=>{
+      micBtn.textContent = "🎙️";
+      micBtn.disabled = false;
+    };
+
+    try{
+      rec.start();
+      toast("Speech search", "Listening…", "info", 1200);
+    } catch {
+      micBtn.textContent = "🎙️";
+      micBtn.disabled = false;
+    }
+  }
+
+  // Wire buttons
   btn.addEventListener("click", ()=>doSearch());
+  micBtn.addEventListener("click", startSpeechSearch);
+
   qEl.addEventListener("keydown", (e)=>{
     if (e.key === "Enter") doSearch();
     else scheduleSuggest();
   });
   qEl.addEventListener("input", scheduleSuggest);
   qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
-
-  nearBtn.addEventListener("click", nearMe);
 
   myLocBtn.addEventListener("click", ()=>{
     if (trackingOn && myLocation) {
@@ -2192,7 +2154,8 @@
         myLocation.lat = use.lat; myLocation.lon = use.lon; myLocation.bearingDeg = 0; myLocation.lastUpdate = Date.now();
         setMyMarkers(use.lat, use.lon, 0);
         map.setView([use.lat, use.lon], 15);
-        toast(outside ? "Outside Athens" : "Location set", outside ? "GPS outside Athens (clamped).": "GPS acquired.", outside ? "info":"ok", 3200);
+        toast(outside ? "Outside Athens" : "Location set", outside ? "GPS outside Athens (clamped).": "GPS acquired.", outside ? "info":"ok", 4200);
+        updateWeatherSmart();
         if (nav.dest) startRoute();
         cacheUiState();
       },
@@ -2200,8 +2163,6 @@
       { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
     );
   });
-
-  savedBtn.addEventListener("click", renderSavedManager);
 
   trackBtn.addEventListener("click", ()=>{
     trackingOn = !trackingOn;
@@ -2220,16 +2181,10 @@
     cacheUiState();
   });
 
-  panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
-  panelRestore.addEventListener("click", ()=> setPanelOpen(true));
-
-  // Nav HUD controls
+  // Nav controls
   navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
   navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
-  navClose.addEventListener("click", ()=>{
-    stopNav();
-    toast("Navigation ended", "Route panel closed.", "info");
-  });
+  navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
 
   navVoice.addEventListener("click", ()=>{
     nav.voiceStyle = (nav.voiceStyle === "off") ? "soft" : "off";
@@ -2240,49 +2195,109 @@
 
   navFollowBtn.addEventListener("click", ()=>{
     followOn = !followOn;
-    navFollowBtn.textContent = followOn ? "Follow: On" : "Follow: Off";
+    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
     toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
     cacheUiState();
   });
 
   navMe.addEventListener("click", ()=>{
     if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-    else toast("No GPS yet", "Tap My location first.", "info", 2200);
+    else toast("Me", "No location yet. Tap My location.", "info", 2200);
   });
 
   // Zoom
   zoomInBtn.addEventListener("click", ()=> map.zoomIn());
   zoomOutBtn.addEventListener("click", ()=> map.zoomOut());
 
-  // Compass tap: north-up + center on me if following
-  compass.addEventListener("click", ()=>{
-    // If already navigating, center on me; otherwise just reset bearing visual
-    if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-    // Visual reset (we can’t truly rotate tiles in Leaflet without extra plugins)
-    toast("Compass", "North-up view (map is fixed).", "info", 1400);
+  // Explore
+  exploreRefresh.addEventListener("click", exploreFetch);
+
+  // Saved tab quick actions
+  savedManageBtn.addEventListener("click", renderSavedManager);
+
+  function startSetFixed(key, label){
+    if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+      setFixedPlace(key, nav.dest.lat, nav.dest.lon);
+      toast("Saved", `${label} saved from selected destination.`, "ok");
+      return;
+    }
+    armSave = { type:"fixed", key };
+    toast("Set saved place", `Tap on the map to set ${label}.`, "info", 5200);
+  }
+
+  saveHomeBtn.addEventListener("click", ()=> startSetFixed("home","Home"));
+  saveSchoolBtn.addEventListener("click", ()=> startSetFixed("school","School"));
+  saveWorkBtn.addEventListener("click", ()=> startSetFixed("work","Work"));
+
+  addPlaceBtn.addEventListener("click", ()=>{
+    const name = prompt("Name this place (e.g., Gym, Grandma, Favorite cafe):");
+    if (!name) return;
+
+    if (nav.dest && Number.isFinite(nav.dest.lat) && Number.isFinite(nav.dest.lon)){
+      addCustomPlace(name, nav.dest.lat, nav.dest.lon);
+      toast("Saved", `"${name}" saved from selected destination.`, "ok");
+      return;
+    }
+
+    armSave = { type:"custom", name };
+    toast("Add place", `Tap on the map to place: "${name}"`, "info", 5200);
+  });
+
+  // Settings button opens the Settings tab + modal placeholder
+  settingsBtn.addEventListener("click", ()=>{
+    switchTab("settings");
+    setPanelOpen(true);
+  });
+
+  voiceTestBtn.addEventListener("click", ()=>{
+    nav.voiceStyle = "soft";
+    updateVoiceBtn();
+    speak("Test. Athens Navigator voice.");
+    toast("Voice test", "If this sounds robotic, it’s your device voice. We’ll add a better selector later.", "info", 3600);
+  });
+
+  resetUiBtn.addEventListener("click", ()=>{
+    if (!confirm("Reset UI state? (Keeps saved places)")) return;
+    localStorage.removeItem(UI_KEY);
+    localStorage.removeItem(LAST_RESULTS_KEY);
+    toast("Reset", "UI state cleared. Refresh the page.", "info", 2800);
   });
 
   // Init
   window.addEventListener("DOMContentLoaded", async ()=>{
-    migrateIfNeeded();
+    aboutLine.textContent = `Athens Navigator v${APP_VERSION}`;
 
-    setTimeout(()=>{ splash.classList.add("hidden"); }, 900);
-    map.once("load", ()=> setTimeout(()=> splash.classList.add("hidden"), 300));
+    tickTime();
+    setInterval(tickTime, 1000 * 20);
 
     updateOfflineHint();
-    renderChips();
     renderSavedMarkers();
     restoreUiState();
+
     initPanelDrag();
-    setPanelOpen(panelOpen);
+    setPanelOpen(true);
 
     applyTrackingDesiredState();
     window.addEventListener("pointerdown", armTrackingOnce, true);
 
-    registerSW();
-    initDeviceCompass();
+    await initCompass();
 
-    toast("Athens Navigator", `v${APP_VERSION} ready. Tap the map to pin a destination.`, "info", 2600);
+    // weather initial + on map move (throttled)
+    let weatherMoveT = 0;
+    map.on("moveend", ()=>{
+      const now = Date.now();
+      if (now - weatherMoveT < 6000) return;
+      weatherMoveT = now;
+      updateWeatherSmart();
+    });
+
+    updateWeatherSmart();
+
+    registerSW();
+
+    setTimeout(()=>{ splash.classList.add("hidden"); }, 900);
+
+    toast("Athens Navigator", `v${APP_VERSION} ready. Tap the map to pin a destination.`, "info", 2800);
   });
   </script>
 </body>
