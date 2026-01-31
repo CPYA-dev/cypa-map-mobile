@@ -94,6 +94,7 @@
       border:1px solid rgba(255,255,255,.09);
       background: rgba(255,255,255,.06);
       min-width: 0;
+      position: relative;
     }
     .search input{
       width:100%;
@@ -117,6 +118,61 @@
       white-space:nowrap;
     }
     .pill .dot{ width:8px; height:8px; border-radius:99px; background:var(--good); box-shadow:0 0 0 3px rgba(35,196,131,.16); }
+
+    /* ===== Search Suggestions Dropdown (NEW) ===== */
+    .suggestBox{
+      position:absolute;
+      left: calc(10px + var(--safeLeft));
+      right: calc(10px + var(--safeRight));
+      top: calc(10px + var(--safeTop) + var(--appbarH) + 6px);
+      z-index: 80;
+      display:none;
+      pointer-events:auto;
+    }
+    .suggestCard{
+      width: min(560px, 100%);
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(14,23,48,.90);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+    }
+    .suggestRow{
+      padding: 12px 12px;
+      cursor:pointer;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .suggestRow:hover{ background: rgba(255,255,255,.05); }
+    .suggestMain{ min-width:0; }
+    .suggestName{
+      font-weight:900;
+      font-size:13px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .suggestMeta{
+      font-size:12px;
+      color: rgba(234,240,255,.68);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      margin-top:2px;
+    }
+    .suggestTag{
+      font-size:11px;
+      color: rgba(234,240,255,.70);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      padding: 6px 10px;
+      border-radius: 999px;
+      flex:0 0 auto;
+    }
 
     /* Widgets (time, weather, compass) */
     .widgets{
@@ -157,8 +213,9 @@
 
     .compassWrap{ width: 160px; }
     .compassBox{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+    /* Compass 25% smaller (NEW) */
     .compass{
-      width: 96px; height: 96px;
+      width: 72px; height: 72px;   /* was 96x96 */
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.10);
       background: radial-gradient(circle at 30% 25%, rgba(78,161,255,.18), rgba(255,255,255,.03) 55%);
@@ -167,13 +224,13 @@
       overflow:hidden;
     }
     .compass .n{
-      position:absolute; top:9px;
-      font-size:12px; font-weight:900;
+      position:absolute; top:7px;
+      font-size:11px; font-weight:900;
       color: rgba(234,240,255,.9);
       letter-spacing:.5px;
     }
     .needle{
-      width: 3px; height: 38px;
+      width: 3px; height: 28px;     /* was 38 */
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(255,92,122,.95), rgba(78,161,255,.9));
       transform-origin: 50% 80%;
@@ -385,7 +442,7 @@
     .nearPanel.open{ transform: translateY(0%); }
     .nearHead{
       padding: 8px 12px 10px 12px;
-      display:flex; flex-direction:column; gap:8px;
+      display:flex; flex-direction:column; gap:10px;
       border-bottom:1px solid rgba(255,255,255,.06);
       background: rgba(14,23,48,.62);
     }
@@ -405,10 +462,37 @@
     .nearTitle strong{ font-size:14px; font-weight:900; }
     .nearTitle small{ font-size:12px; color:rgba(234,240,255,.72); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+    /* NEW: Horizontal category chips bar */
+    .nearCats{
+      display:flex;
+      gap:10px;
+      overflow-x:auto;
+      padding: 0 2px 4px 2px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .nearCats::-webkit-scrollbar{ display:none; }
+    .catChip{
+      border-radius: 999px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .catChip.active{
+      background: linear-gradient(135deg, rgba(78,161,255,.22), rgba(124,92,255,.18));
+      border-color: rgba(78,161,255,.38);
+    }
+
     .nearBody{
       padding: 10px;
       display:flex; flex-direction:column; gap:10px;
-      max-height: 44vh;
+      max-height: 46vh;
       overflow:auto;
     }
     .nearControls{
@@ -448,6 +532,8 @@
       transition: transform .22s ease;
       padding: calc(12px + var(--safeTop)) 12px calc(12px + var(--safeBottom)) 12px;
       display:flex; flex-direction:column; gap:12px;
+      overflow-y: auto;             /* NEW: scrollable settings */
+      -webkit-overflow-scrolling: touch;
     }
     .drawer.show{ transform: translateX(0); }
     .section{
@@ -642,6 +728,11 @@
     </div>
   </header>
 
+  <!-- Suggestions dropdown (NEW) -->
+  <div class="suggestBox" id="suggestBox" aria-label="Search suggestions">
+    <div class="suggestCard" id="suggestCard"></div>
+  </div>
+
   <!-- Widgets -->
   <div class="widgets">
     <div class="widget wSmall" aria-label="Time">
@@ -715,21 +806,23 @@
             </svg>
           </button>
         </div>
+
+        <!-- NEW: category chips row -->
+        <div class="nearCats" id="nearCats" aria-label="Near Me Categories">
+          <div class="catChip active" data-type="pharmacy">Pharmacies</div>
+          <div class="catChip" data-type="atm">ATMs</div>
+          <div class="catChip" data-type="supermarket">Supermarkets</div>
+          <div class="catChip" data-type="cafe">Cafes</div>
+          <div class="catChip" data-type="restaurant">Restaurants</div>
+          <div class="catChip" data-type="fuel">Gas</div>
+          <div class="catChip" data-type="hospital">Hospitals</div>
+          <div class="catChip" data-type="police">Police</div>
+          <div class="catChip" data-type="parking">Parking</div>
+        </div>
       </div>
+
       <div class="nearBody">
         <div class="nearControls">
-          <select class="select" id="nearType" aria-label="Category">
-            <option value="pharmacy">Pharmacies</option>
-            <option value="atm">ATMs</option>
-            <option value="supermarket">Supermarkets</option>
-            <option value="cafe">Cafes</option>
-            <option value="restaurant">Restaurants</option>
-            <option value="fuel">Gas stations</option>
-            <option value="hospital">Hospitals</option>
-            <option value="police">Police</option>
-            <option value="parking">Parking</option>
-          </select>
-
           <select class="select" id="nearRadius" aria-label="Radius">
             <option value="400">400 m</option>
             <option value="800" selected>800 m</option>
@@ -915,10 +1008,11 @@
   // Requirements:
   // - Athens-only strict lock (no zooming out of Athens)
   // - Tap / left click drops destination pin (desktop + mobile)
-  // - Near Me bottom sheet (tap + slide)
-  // - Compass + Time + Weather (icons)
+  // - Near Me bottom sheet (tap + slide) + horizontal category chips
+  // - Compass + Time + Weather (icons) + compass smaller
   // - Walking/Driving/Cycling different times
   // - Turn-by-turn arrows/icons
+  // - Search suggestions autocomplete (curated Athens list)
   // =========================
 
   const $ = (id) => document.getElementById(id);
@@ -1020,6 +1114,148 @@
   }
 
   // -------------------------
+  // Search Suggestions (NEW)
+  // -------------------------
+  const CURATED_ATHENS = [
+    // Core landmarks
+    { q:"Acropolis", tag:"Landmark", meta:"Ιερός Βράχος" },
+    { q:"Parthenon", tag:"Landmark", meta:"Acropolis" },
+    { q:"Syntagma Square", tag:"Center", meta:"Metro Syntagma" },
+    { q:"Monastiraki", tag:"Center", meta:"Flea Market / Metro" },
+    { q:"Omonia Square", tag:"Center", meta:"Metro Omonia" },
+    { q:"Plaka", tag:"Neighborhood", meta:"Old Town" },
+    { q:"Psiri", tag:"Neighborhood", meta:"Bars & food" },
+    { q:"Gazi (Technopolis)", tag:"Neighborhood", meta:"Nightlife / events" },
+    { q:"Thiseio", tag:"Neighborhood", meta:"Ancient Agora area" },
+    { q:"Koukaki", tag:"Neighborhood", meta:"Near Acropolis Museum" },
+    { q:"Kolonaki", tag:"Neighborhood", meta:"Luxe area" },
+    { q:"Exarchia Square", tag:"Neighborhood", meta:"Cafes / books" },
+    { q:"Panathenaic Stadium (Kallimarmaro)", tag:"Landmark", meta:"Historic stadium" },
+    { q:"Acropolis Museum", tag:"Museum", meta:"Dionysiou Areopagitou" },
+    { q:"National Archaeological Museum", tag:"Museum", meta:"Patission" },
+    { q:"Benaki Museum", tag:"Museum", meta:"Kolonaki" },
+    { q:"Stavros Niarchos Foundation Cultural Center (SNFCC)", tag:"Landmark", meta:"Kallithea" },
+    { q:"National Garden Athens", tag:"Park", meta:"By Syntagma" },
+    { q:"Zappeion", tag:"Landmark", meta:"Garden area" },
+    { q:"Temple of Olympian Zeus", tag:"Landmark", meta:"Columns" },
+    { q:"Hadrian's Arch", tag:"Landmark", meta:"By Zeus temple" },
+    { q:"Ancient Agora", tag:"Landmark", meta:"Thiseio" },
+    { q:"Roman Agora", tag:"Landmark", meta:"Plaka" },
+    { q:"Kerameikos", tag:"Landmark", meta:"Archaeological site" },
+    { q:"Lycabettus Hill", tag:"Viewpoint", meta:"Best city view" },
+    { q:"Philopappos Hill", tag:"Viewpoint", meta:"Acropolis views" },
+    { q:"Pnyx", tag:"Landmark", meta:"Historic hill" },
+
+    // Transport
+    { q:"Athens International Airport (ATH)", tag:"Transport", meta:"Eleftherios Venizelos" },
+    { q:"Larissa Station Athens", tag:"Transport", meta:"Train station" },
+    { q:"Piraeus Port", tag:"Transport", meta:"Ferries" },
+    { q:"Kifisos KTEL", tag:"Transport", meta:"Intercity buses" },
+
+    // Neighborhoods / Areas
+    { q:"Piraeus", tag:"Area", meta:"Port city" },
+    { q:"Kallithea", tag:"Area", meta:"SNFCC nearby" },
+    { q:"Nea Smyrni Square", tag:"Area", meta:"Popular square" },
+    { q:"Pangrati", tag:"Area", meta:"Local vibe" },
+    { q:"Ilissia", tag:"Area", meta:"Near Evangelismos" },
+    { q:"Zografou", tag:"Area", meta:"NTUA" },
+    { q:"Kaisariani", tag:"Area", meta:"Hymettus edge" },
+    { q:"Vyronas", tag:"Area", meta:"Residential" },
+    { q:"Dafni", tag:"Area", meta:"Metro line" },
+    { q:"Ilioupoli", tag:"Area", meta:"South Athens" },
+    { q:"Peristeri", tag:"Area", meta:"West Athens" },
+    { q:"Egaleo", tag:"Area", meta:"West Athens" },
+    { q:"Chalandri", tag:"Area", meta:"North Athens" },
+    { q:"Agia Paraskevi", tag:"Area", meta:"North-East Athens" },
+    { q:"Marousi", tag:"Area", meta:"North Athens" },
+    { q:"Kifisia", tag:"Area", meta:"North Athens" },
+
+    // Shopping / Malls
+    { q:"The Mall Athens", tag:"Mall", meta:"Marousi" },
+    { q:"Golden Hall", tag:"Mall", meta:"Marousi" },
+    { q:"Athens Metro Mall", tag:"Mall", meta:"Agios Dimitrios" },
+
+    // Coastal
+    { q:"Flisvos Marina", tag:"Coast", meta:"Palaio Faliro" },
+    { q:"Alimos Marina", tag:"Coast", meta:"South Athens" },
+    { q:"Faliro Delta", tag:"Coast", meta:"By SNFCC" },
+    { q:"Glyfada", tag:"Coast", meta:"Riviera" },
+    { q:"Voula", tag:"Coast", meta:"Riviera" },
+    { q:"Vouliagmeni", tag:"Coast", meta:"Riviera" },
+    { q:"Vouliagmeni Lake", tag:"Coast", meta:"Lake / spa" },
+
+    // Hospitals (useful)
+    { q:"Evangelismos Hospital", tag:"Hospital", meta:"Athens center" },
+    { q:"Attikon Hospital", tag:"Hospital", meta:"Chaidari" },
+    { q:"Hygeia Hospital", tag:"Hospital", meta:"Marousi" },
+    { q:"Mitera Hospital", tag:"Hospital", meta:"Marousi" },
+
+    // Metro stops / key points
+    { q:"Fix Metro Station", tag:"Metro", meta:"Syngrou-Fix" },
+    { q:"Akropoli Metro Station", tag:"Metro", meta:"Line 2" },
+    { q:"Syntagma Metro Station", tag:"Metro", meta:"Lines 2 & 3" },
+    { q:"Monastiraki Metro Station", tag:"Metro", meta:"Lines 1 & 3" },
+    { q:"Airport Metro Station", tag:"Metro", meta:"Line 3" },
+  ];
+
+  const suggestBox = $("suggestBox");
+  const suggestCard = $("suggestCard");
+  const qInput = $("q");
+
+  function hideSuggest(){ suggestBox.style.display = "none"; suggestCard.innerHTML = ""; }
+
+  function renderSuggest(list){
+    if (!list.length){ hideSuggest(); return; }
+    suggestCard.innerHTML = "";
+    for (const item of list){
+      const row = document.createElement("div");
+      row.className = "suggestRow";
+      row.innerHTML = `
+        <div class="suggestMain">
+          <div class="suggestName">${escapeHtml(item.q)}</div>
+          <div class="suggestMeta">${escapeHtml(item.meta || "")}</div>
+        </div>
+        <div class="suggestTag">${escapeHtml(item.tag || "Athens")}</div>
+      `;
+      row.addEventListener("click", () => {
+        qInput.value = item.q;
+        hideSuggest();
+        doSearch();
+      });
+      suggestCard.appendChild(row);
+    }
+    suggestBox.style.display = "block";
+  }
+
+  function updateSuggest(){
+    const v = (qInput.value || "").trim().toLowerCase();
+    if (!v){ hideSuggest(); return; }
+
+    // filter + prioritize prefix matches
+    const matches = CURATED_ATHENS
+      .map(x => {
+        const q = x.q.toLowerCase();
+        const idx = q.indexOf(v);
+        if (idx === -1) return null;
+        // scoring: prefix best, then earlier occurrences
+        const score = (idx === 0 ? 0 : 10 + idx);
+        return { ...x, _score: score };
+      })
+      .filter(Boolean)
+      .sort((a,b) => a._score - b._score)
+      .slice(0, 10);
+
+    renderSuggest(matches);
+  }
+
+  qInput.addEventListener("input", updateSuggest);
+  qInput.addEventListener("focus", updateSuggest);
+  qInput.addEventListener("blur", () => setTimeout(hideSuggest, 120)); // allow click
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideSuggest();
+  });
+
+  // -------------------------
   // Map init (Athens-only)
   // -------------------------
   const map = L.map("map", {
@@ -1052,7 +1288,6 @@
       if (!hardBounds.contains(map.getCenter())){
         map.panInsideBounds(hardBounds, { animate:true });
       }
-      // keep zoom from going too low
       if (map.getZoom() < map.options.minZoom) map.setZoom(map.options.minZoom);
     } else {
       map.setMaxBounds(null);
@@ -1063,7 +1298,6 @@
   map.setView(ATHENS_CENTER, 12.6);
   applyAthensLock();
 
-  // Enforce lock on moveend/zoomend
   map.on("moveend zoomend", () => {
     if (!athensLock) return;
     if (!hardBounds.contains(map.getCenter())){
@@ -1158,20 +1392,15 @@
     }
   }
 
-  // Prevent accidental pin drops during drags
   let dragging = false;
   map.on("dragstart", () => dragging = true);
   map.on("dragend", () => setTimeout(() => dragging = false, 60));
 
-  // Desktop + mobile: normal click/tap drops pin
   map.on("click", (e) => {
     if (dragging) return;
-    // If user tapped on an existing marker popup, Leaflet will still emit click sometimes.
-    // We accept it; it matches your "tap to pin" goal.
     setDestination(e.latlng.lat, e.latlng.lng, "Dropped pin");
   });
 
-  // Long-press mobile support (extra reliability)
   let pressTimer = null;
   const mapEl = $("map");
   mapEl.addEventListener("touchstart", (ev) => {
@@ -1221,7 +1450,6 @@
           userMarker.setLatLng(userLatLng);
         }
 
-        // Keep within Athens lock
         if (athensLock){
           map.panInsideBounds(hardBounds, { animate:true });
           map.setView(userLatLng, Math.max(map.getZoom(), 14), { animate:true });
@@ -1392,7 +1620,7 @@
   function selectResult(r){
     selectedResult = r;
 
-    // markers
+    clearSuggest();
     clearDestination();
     clearSearchMarkers();
 
@@ -1458,10 +1686,12 @@
         showPanel("Outside Athens", "Those coordinates are outside the Athens-only area.");
         return;
       }
+      hideSuggest();
       setDestination(coords.lat, coords.lon, "Coordinates");
       return;
     }
 
+    hideSuggest();
     clearRoute();
     clearDestination();
     clearSearchMarkers();
@@ -1474,7 +1704,6 @@
       let results = await tryCPYA(q);
       if (!results || results.length === 0) results = await nominatimSearch(q);
 
-      // Athens-only filtering
       results = (results || []).filter(r => inBbox(r.lat, r.lon, ATHENS_BBOX));
       renderResults(results, q);
 
@@ -1492,16 +1721,12 @@
   // Routing: different routers per mode (so times differ)
   // -------------------------
   function routerForMode(mode){
-    // Separate OSRM instances (reliable different timings)
-    // - Driving: router.project-osrm.org
-    // - Walking/Cycling: routing.openstreetmap.de (OSRM)
     if (mode === "driving"){
       return L.Routing.osrmv1({ serviceUrl: "https://router.project-osrm.org/route/v1" });
     }
     if (mode === "walking"){
       return L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1" });
     }
-    // cycling
     return L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-bike/route/v1" });
   }
 
@@ -1667,10 +1892,8 @@
   }
 
   function extractSteps(route){
-    // Normalize steps from common LRM/OSRM shapes
     const out = [];
 
-    // Shape A: route.instructions[]
     if (Array.isArray(route.instructions)){
       for (const ins of route.instructions){
         out.push({
@@ -1685,7 +1908,6 @@
       return out;
     }
 
-    // Shape B: route.legs[].steps[] (OSRM-like)
     const leg = route.legs?.[0];
     if (leg && Array.isArray(leg.steps)){
       for (const st of leg.steps){
@@ -1722,7 +1944,6 @@
   }
 
   function stepIconSVG(type){
-    // simple but clear icon set: left/right/uturn/roundabout/straight/arrive
     const c = "currentColor";
     if (type === "left") return `
       <svg viewBox="0 0 24 24" fill="none">
@@ -1750,7 +1971,6 @@
         <path d="M12 22s7-4.5 7-12a7 7 0 1 0-14 0c0 7.5 7 12 7 12Z" stroke="${c}" stroke-width="2"/>
         <path d="M12 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="${c}" stroke-width="2"/>
       </svg>`;
-    // straight/default
     return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 5v14" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
@@ -1761,7 +1981,7 @@
   $("dockRoute").addEventListener("click", buildRoute);
 
   // -------------------------
-  // Near Me (tap + slide)
+  // Near Me (tap + slide) + chips (NEW)
   // -------------------------
   const nearPanel = $("nearPanel");
   let nearOpen = false;
@@ -1776,14 +1996,13 @@
   $("dockNear").addEventListener("click", () => setNear(!nearOpen));
   $("nearClose").addEventListener("click", () => setNear(false));
 
-  // Tap header toggles open/close
   $("nearHandle").addEventListener("click", (e) => {
-    // Avoid toggle when clicking close button
     if (e.target.closest("#nearClose")) return;
+    // if user clicked on a cat chip, don't toggle sheet
+    if (e.target.closest(".catChip")) return;
     setNear(!nearOpen);
   });
 
-  // Slide gesture: simple drag-to-close/open on mobile
   let startY = null;
   let startOpen = false;
   $("nearHandle").addEventListener("touchstart", (e) => {
@@ -1796,9 +2015,7 @@
     if (startY == null) return;
     const y = e.touches[0].clientY;
     const dy = y - startY;
-    // If open and dragging down significantly => close
     if (startOpen && dy > 35) setNear(false);
-    // If closed and dragging up significantly => open
     if (!startOpen && dy < -35) setNear(true);
   }, { passive:true });
 
@@ -1817,6 +2034,19 @@
     parking: 'amenity=parking'
   };
 
+  let nearType = "pharmacy"; // NEW: controlled by chips
+  const nearCats = $("nearCats");
+  nearCats.addEventListener("click", (e) => {
+    const chip = e.target.closest(".catChip");
+    if (!chip) return;
+    const t = chip.dataset.type;
+    if (!t) return;
+
+    nearType = t;
+    [...nearCats.querySelectorAll(".catChip")].forEach(x => x.classList.toggle("active", x === chip));
+    toast(`Near: ${chip.textContent}`);
+  });
+
   let nearMarkers = [];
   function clearNearMarkers(){
     for (const m of nearMarkers) map.removeLayer(m);
@@ -1824,7 +2054,6 @@
   }
 
   async function overpassNearby(lat, lon, radius, tagExpr){
-    // Query nodes/ways/relations, but we mostly map nodes + way center fallback
     const q = `
       [out:json][timeout:25];
       (
@@ -1869,9 +2098,8 @@
       toast("Tap Locate first.");
       return;
     }
-    const type = $("nearType").value;
     const radius = Number($("nearRadius").value) || 800;
-    const tagExpr = NEAR_TAGS[type] || 'amenity=pharmacy';
+    const tagExpr = NEAR_TAGS[nearType] || 'amenity=pharmacy';
 
     $("nearList").innerHTML = "";
     $("nearList").appendChild(makeInfoCard("Scanning…", "Finding places near you."));
@@ -1880,7 +2108,6 @@
       clearNearMarkers();
       const elems = await overpassNearby(userLatLng.lat, userLatLng.lng, radius, tagExpr);
 
-      // Filter inside Athens when locked
       const items = elems.map(el => {
         const ll = getElemLatLon(el);
         if (!ll) return null;
@@ -1890,7 +2117,6 @@
         return { name, addr, lat: ll.lat, lon: ll.lon, tags: el.tags || {} };
       }).filter(Boolean);
 
-      // Sort by distance
       items.sort((a,b) => {
         const da = map.distance(userLatLng, [a.lat,a.lon]);
         const db = map.distance(userLatLng, [b.lat,b.lon]);
@@ -1916,7 +2142,7 @@
             </div>
             <div style="text-align:right;flex:0 0 auto;">
               <div style="font-weight:900;font-size:13px;">${formatDist(d)}</div>
-              <div style="font-size:12px;color:rgba(234,240,255,.70);">${escapeHtml(type)}</div>
+              <div style="font-size:12px;color:rgba(234,240,255,.70);">${escapeHtml(nearType)}</div>
             </div>
           </div>
           <div class="chips">
@@ -1990,10 +2216,8 @@
     setDockActive("dockSearch");
     showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
     clearPanelList();
-    addPanelCard(makeInfoCard("Quick start", "1) Locate • 2) Tap map or Search • 3) Route • 4) Near Me (slide)"));
+    addPanelCard(makeInfoCard("Quick start", "1) Locate • 2) Tap map or Search • 3) Route • 4) Near Me (tap/slide)"));
   });
-
-  $("btnClosePanel").addEventListener("click", hidePanel);
 
   // -------------------------
   // Clipboard
@@ -2039,36 +2263,30 @@
   };
 
   function weatherIcon(code){
-    // Minimal icon set
     const c = "currentColor";
-    // thunder
     if ([95,96,99].includes(code)) return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M13 13l-3 6h3l-2 4" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
-    // rain
     if ([61,63,65,80,81,82,51,53,55].includes(code)) return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M10 18l-1 3M14 18l-1 3M18 18l-1 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
       </svg>`;
-    // snow
     if ([71,73,75].includes(code)) return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M12 18v4M10 20h4M10.5 18.5l3 3M13.5 18.5l-3 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
       </svg>`;
-    // cloudy
     if ([2,3,45,48].includes(code)) return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
         <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
       </svg>`;
-    // clear / mostly clear
     return `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="${c}" stroke-width="2"/>
@@ -2114,15 +2332,13 @@
     const d = (deg == null || !isFinite(deg)) ? null : ((deg % 360) + 360) % 360;
     $("headingTxt").textContent = d == null ? "--°" : `${Math.round(d)}°`;
     if (d == null) return;
-    // rotate needle opposite to heading (so needle points north relative)
     $("needle").style.transform = `rotate(${d}deg)`;
   }
 
   function onOrientation(e){
-    // iOS: webkitCompassHeading. Others: alpha (0..360)
     let heading = null;
     if (typeof e.webkitCompassHeading === "number"){
-      heading = e.webkitCompassHeading; // already degrees
+      heading = e.webkitCompassHeading;
     } else if (typeof e.alpha === "number"){
       heading = 360 - e.alpha;
     }
@@ -2131,7 +2347,6 @@
 
   async function enableCompass(){
     try{
-      // iOS permission gate
       if (typeof DeviceOrientationEvent !== "undefined" &&
           typeof DeviceOrientationEvent.requestPermission === "function"){
         const r = await DeviceOrientationEvent.requestPermission();
@@ -2167,7 +2382,6 @@
     setTimeout(() => { $("loading").style.display = "none"; }, 220);
   });
   setTimeout(() => { $("loading").style.display = "none"; }, 2200);
-
 </script>
 </body>
 </html>
