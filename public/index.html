@@ -12,10 +12,12 @@
     :root{
       --bg:#07080b;
       --card: rgba(17,19,24,.92);
+      --card2: rgba(12,14,18,.92);
       --text:#e8eaed;
       --muted:#aab0bb;
       --line:rgba(255,255,255,.10);
       --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --shadow2: 0 16px 40px rgba(0,0,0,.45);
       --radius: 16px;
       --radius2: 22px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -23,7 +25,9 @@
       --accent:#4aa3ff;
       --danger:#ff4d4d;
       --ok:#00d084;
+      --glass: blur(12px);
     }
+
     html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
     #app { height: 100%; position:relative; }
     #map { height: 100%; width: 100%; }
@@ -33,14 +37,17 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
     }
 
-    /* Splash */
+    /* ===== Splash ===== */
     #splash{
       position: fixed; inset: 0; z-index: 9000;
       display:flex; align-items:center; justify-content:center;
-      background: #07080b;
+      background: radial-gradient(1200px 800px at 70% 0%, rgba(74,163,255,.16), transparent 55%),
+                  radial-gradient(900px 700px at 0% 100%, rgba(0,208,132,.10), transparent 55%),
+                  #07080b;
       transition: opacity .35s ease;
     }
     #splash.hidden{ opacity:0; pointer-events:none; }
@@ -48,7 +55,7 @@
     #splashLogo{
       width: 100%;
       border-radius: 18px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow2);
       border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(135deg, rgba(74,163,255,.22), rgba(255,255,255,.06));
       padding: 22px 16px;
@@ -58,7 +65,7 @@
     #splashMeta{ margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
     #splashMeta b{ color: var(--text); }
 
-    /* Toasts */
+    /* ===== Toasts ===== */
     #toastWrap{
       position: fixed;
       top: calc(12px + var(--safe-top));
@@ -89,13 +96,23 @@
     .toast.bad{ border-color: rgba(255,77,77,.35); }
     .toast.ok{ border-color: rgba(0,208,132,.35); }
 
-    /* Loading overlay */
-    #loadingOverlay{ position: fixed; inset: 0; display:none; align-items:center; justify-content:center; z-index: 5000; background: rgba(0,0,0,.35); backdrop-filter: blur(3px); }
-    .loaderCard{ padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line); background: rgba(17,19,24,.92); box-shadow: var(--shadow); display:flex; align-items:center; gap:12px; max-width: 92vw; }
-    .spinner{ width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.2); border-top-color: rgba(255,255,255,.9); border-radius: 999px; animation: spin 0.9s linear infinite; }
+    /* ===== Loading overlay ===== */
+    #loadingOverlay{
+      position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
+      z-index: 5000; background: rgba(0,0,0,.35); backdrop-filter: blur(3px);
+    }
+    .loaderCard{
+      padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line);
+      background: rgba(17,19,24,.92); box-shadow: var(--shadow2);
+      display:flex; align-items:center; gap:12px; max-width: 92vw;
+    }
+    .spinner{
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.2);
+      border-top-color: rgba(255,255,255,.9); border-radius: 999px; animation: spin 0.9s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Weather */
+    /* ===== Weather ===== */
     #weatherCard{
       position: fixed;
       left: 12px;
@@ -111,24 +128,7 @@
     #weatherCard .big{ font-size: 18px; font-weight: 900; }
     #weatherCard .tiny{ font-size: 11px; color: var(--muted); margin-top: 6px; }
 
-    /* Nav card */
-    #navCard{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(12px + var(--safe-bottom));
-      z-index: 1200;
-      padding: 10px 12px;
-      border-radius: 18px;
-      display:none;
-      width: min(680px, 92vw);
-    }
-    #navTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 6px; }
-    #navInstr{ font-size: 15px; font-weight: 900; line-height: 1.2; }
-    #navSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
-    #navBtns{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
-
-    /* Panel + controls */
+    /* ===== Buttons / Inputs ===== */
     .btn{
       background: rgba(255,255,255,.08);
       color: var(--text);
@@ -139,8 +139,11 @@
       cursor:pointer;
       user-select:none;
       white-space:nowrap;
+      transition: transform .06s ease, background .12s ease, border-color .12s ease;
+      touch-action: manipulation;
     }
     .btn:hover{ background: rgba(255,255,255,.12); }
+    .btn:active{ transform: translateY(1px) scale(.99); }
     .btn.primary{ background: rgba(74,163,255,.18); border-color: rgba(74,163,255,.35); }
     .btn.danger{ background: rgba(255,77,77,.14); border-color: rgba(255,77,77,.35); }
     .btn.slim{ padding: 10px 10px; font-size: 14px; border-radius: 12px; }
@@ -156,6 +159,7 @@
       font-size: 16px;
       outline:none;
     }
+    .input:focus{ border-color: rgba(74,163,255,.45); }
     select{
       background: rgba(255,255,255,.06);
       color: var(--text);
@@ -163,16 +167,18 @@
       border-radius: 14px;
       padding: 12px 12px;
       font-size: 14px;
+      outline:none;
     }
+    select:focus{ border-color: rgba(74,163,255,.45); }
     .small { font-size: 12px; color: var(--muted); }
 
-    /* Panel: mobile bottom sheet */
+    /* ===== Panel (bottom sheet) ===== */
     #panel{
       z-index: 2000;
       position: fixed;
       left: 0; right: 0;
       bottom: 0;
-      background: rgba(8,10,14,.90);
+      background: rgba(8,10,14,.92);
       border-top: 1px solid var(--line);
       border-top-left-radius: var(--radius2);
       border-top-right-radius: var(--radius2);
@@ -180,6 +186,7 @@
       transform: translateY(0);
       transition: transform .22s ease;
       will-change: transform;
+      box-shadow: 0 -18px 40px rgba(0,0,0,.35);
     }
     #panelHandle{
       width: 44px; height: 5px;
@@ -191,6 +198,7 @@
     #panelInner{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     #panelRow{ margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
+    /* Suggestions */
     #suggestBox{
       position:absolute;
       left: 12px; right: 12px;
@@ -199,6 +207,8 @@
       z-index: 2200;
       border-radius: 16px;
       overflow:hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow2);
     }
     #suggestBox .item{
       padding: 10px 12px;
@@ -226,8 +236,10 @@
       margin-right: 6px;
       margin-top: 6px;
       white-space:nowrap;
+      transition: background .12s ease, transform .06s ease;
     }
     .pill:hover{ background: rgba(255,255,255,.10); }
+    .pill:active{ transform: translateY(1px) scale(.99); }
 
     /* Results */
     #resultsWrap{ margin-top: 10px; display:none; }
@@ -246,18 +258,19 @@
     .resTitle{ font-size: 14px; font-weight: 900; }
     .resMeta{ font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-    /* Desktop: right drawer panel */
+    /* Desktop: right drawer */
     @media (min-width: 721px){
       #panel{
         top: calc(12px + var(--safe-top));
         bottom: auto;
         left: auto;
         right: 12px;
-        width: 420px;
+        width: 440px;
         border: 1px solid var(--line);
         border-radius: var(--radius2);
         padding: 12px;
         transform: translateX(0);
+        box-shadow: var(--shadow2);
       }
       #suggestBox{ bottom:auto; top: 62px; left: 12px; right: 12px; }
       #panelHandle{
@@ -271,51 +284,208 @@
       }
     }
 
-    /* Custom zoom pill (always above nav/weather/panel) */
-    #zoomPill{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(22px + var(--safe-bottom));
-      z-index: 1600;
-      display:flex;
-      overflow:hidden;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(17,19,24,.88);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
-    .zoomBtn{
-      padding: 10px 14px;
-      cursor:pointer;
-      user-select:none;
-      border: none;
-      background: transparent;
-      color: var(--text);
-      font-size: 18px;
-    }
-    .zoomBtn:hover{ background: rgba(255,255,255,.08); }
-    .zoomSep{ width: 1px; background: rgba(255,255,255,.12); }
-
-    /* Panel restore button (shows only when panel closed) */
+    /* ===== Floating “Open Panel” button (when panel closed) ===== */
     #panelRestore{
       position: fixed;
       right: 12px;
       top: calc(12px + var(--safe-top));
-      z-index: 99999;
-      padding: 10px 12px;
+      z-index: 2600;
+      display:none;
+      width: 46px;
+      height: 46px;
       border-radius: 14px;
       border: 1px solid var(--line);
       background: rgba(17,19,24,.92);
       color: var(--text);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow2);
       cursor:pointer;
-      display:none;
+      align-items:center;
+      justify-content:center;
+      font-size: 18px;
+      user-select:none;
     }
-    #panelRestore:hover{ background: rgba(255,255,255,.10); }
+    #panelRestore.show{ display:flex; }
 
-    /* Modal */
+    /* ===== Zoom (bottom-right, thumb reachable) ===== */
+    #zoomDock{
+      position: fixed;
+      right: 12px;
+      bottom: calc(12px + var(--safe-bottom));
+      z-index: 1500;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .fab{
+      pointer-events:auto;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(17,19,24,.88);
+      box-shadow: var(--shadow2);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .12s ease;
+      color: var(--text);
+    }
+    .fab:hover{ background: rgba(255,255,255,.08); }
+    .fab:active{ transform: translateY(1px) scale(.99); }
+    .fab svg{ width: 20px; height: 20px; opacity:.95; }
+
+    /* ===== Compass (mobile-first) ===== */
+    #compass{
+      position: fixed;
+      right: 12px;
+      bottom: calc(12px + var(--safe-bottom) + 120px);
+      z-index: 1500;
+      display:none;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(17,19,24,.88);
+      box-shadow: var(--shadow2);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+      user-select:none;
+      cursor:pointer;
+      align-items:center;
+      justify-content:center;
+    }
+    #compass.show{ display:flex; }
+    #needle{
+      width: 26px; height: 26px;
+      transform: rotate(0deg);
+      transition: transform .12s linear;
+    }
+    #compass .n{
+      position:absolute;
+      top: 4px;
+      font-size: 10px;
+      color: rgba(255,255,255,.85);
+      letter-spacing: .4px;
+      opacity:.9;
+    }
+
+    /* ===== Navigation HUD ===== */
+    #navHud{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      top: calc(12px + var(--safe-top));
+      z-index: 1700;
+      width: min(720px, 94vw);
+      display:none;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(12,14,18,.86);
+      box-shadow: var(--shadow2);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+      overflow:hidden;
+    }
+    #navHud.show{ display:block; }
+
+    #navHudInner{
+      padding: 12px 12px 10px;
+      display:flex;
+      gap: 12px;
+      align-items:center;
+    }
+    #navTurnIcon{
+      width: 44px; height: 44px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:center;
+      flex: 0 0 auto;
+    }
+    #navTurnIcon svg{ width: 22px; height: 22px; opacity:.96; }
+    #navMain{ flex: 1 1 auto; min-width: 0; }
+    #navPrimary{
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #navSecondary{
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #navActions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex: 0 0 auto;
+    }
+    .hudBtn{
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .12s ease;
+      color: var(--text);
+    }
+    .hudBtn:hover{ background: rgba(255,255,255,.09); }
+    .hudBtn:active{ transform: translateY(1px) scale(.99); }
+    .hudBtn svg{ width: 18px; height: 18px; opacity:.95; }
+
+    #navHudBar{
+      padding: 10px 12px 12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
+    }
+    #navMeta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    #navToggles{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .togglePill{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .12s ease;
+    }
+    .togglePill:hover{ background: rgba(255,255,255,.09); }
+    .togglePill:active{ transform: translateY(1px) scale(.99); }
+
+    /* ===== Modal ===== */
     #modal{
       position: fixed; inset: 0; z-index: 8000;
       display:none; align-items:center; justify-content:center;
@@ -356,15 +526,25 @@
       outline:none;
     }
 
-    /* Leaflet: hide default zoom controls (we use pill) */
+    /* Leaflet: hide default zoom controls */
     .leaflet-control-zoom{ display:none !important; }
+
+    /* Small polish */
+    .kbd{
+      font-size:11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+    }
+
+    /* When navigating, reduce clutter */
+    body.nav-active #weatherCard{ display:none !important; }
   </style>
 </head>
 
 <body>
-  <!-- Restore button MUST be inside body -->
-  <button id="panelRestore" type="button" aria-label="Open panel">☰ Panel</button>
-
   <div id="splash">
     <div id="splashInner">
       <div id="splashLogo">
@@ -372,7 +552,7 @@
         <p>Search • Save places • Navigate</p>
       </div>
       <div id="splashMeta">
-        <div><b>Athens Navigator</b> · v1.3</div>
+        <div><b>Athens Navigator</b> · v1.2</div>
         <div>© 2025 Athens Navigator. All rights reserved.</div>
       </div>
     </div>
@@ -392,29 +572,75 @@
 
   <div id="weatherCard" class="card"></div>
 
-  <div id="navCard" class="card">
-    <div id="navTop">
-      <div>
-        <div id="navInstr">—</div>
-        <div id="navSub">—</div>
+  <!-- Panel restore (shows when panel closed) -->
+  <button id="panelRestore" type="button" aria-label="Open panel" title="Open panel">☰</button>
+
+  <!-- Compass -->
+  <div id="compass" aria-label="Compass" title="Tap: North-up">
+    <div class="n">N</div>
+    <svg id="needle" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2 L15.5 12 L12 10.5 L8.5 12 Z" fill="rgba(255,255,255,.92)"/>
+      <path d="M12 22 L8.5 12 L12 13.5 L15.5 12 Z" fill="rgba(74,163,255,.55)"/>
+    </svg>
+  </div>
+
+  <!-- Zoom dock -->
+  <div id="zoomDock" aria-label="Map controls">
+    <button class="fab" id="zoomIn" title="Zoom in" aria-label="Zoom in">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="fab" id="zoomOut" title="Zoom out" aria-label="Zoom out">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Navigation HUD -->
+  <div id="navHud" role="region" aria-label="Navigation">
+    <div id="navHudInner">
+      <div id="navTurnIcon" aria-hidden="true">
+        <svg id="navTurnSvg" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 5l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </div>
-      <button class="btn slim" id="navClose" title="End navigation">✕</button>
+      <div id="navMain">
+        <div id="navPrimary">—</div>
+        <div id="navSecondary">—</div>
+      </div>
+      <div id="navActions">
+        <button class="hudBtn" id="navPrev" title="Previous step" aria-label="Previous step">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M14.5 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="hudBtn" id="navNext" title="Next step" aria-label="Next step">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.5 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="hudBtn" id="navClose" title="End navigation" aria-label="End navigation">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
-    <div id="navBtns">
-      <button class="btn slim" id="navPrev" title="Previous step">◀</button>
-      <button class="btn slim primary" id="navNext" title="Next step">▶</button>
-      <button class="btn slim" id="navVoice">🔈 Voice: Off</button>
-      <button class="btn slim" id="navFollow">🧭 Follow: On</button>
-      <button class="btn slim" id="navCenter">📍 Me</button>
+    <div id="navHudBar">
+      <div id="navMeta">—</div>
+      <div id="navToggles">
+        <button class="togglePill" id="navVoice">Voice: Off</button>
+        <button class="togglePill" id="navFollow">Follow: On</button>
+        <button class="togglePill" id="navMe">Me</button>
+      </div>
     </div>
   </div>
 
-  <div id="zoomPill" aria-label="Zoom">
-    <button class="zoomBtn" id="zoomOut" title="Zoom out">−</button>
-    <div class="zoomSep"></div>
-    <button class="zoomBtn" id="zoomIn" title="Zoom in">+</button>
-  </div>
-
+  <!-- Modal -->
   <div id="modal">
     <div id="modalCard" class="card">
       <div class="mRow" style="justify-content:space-between;">
@@ -429,7 +655,7 @@
     <div id="map"></div>
 
     <div id="panel" class="card">
-      <div id="panelHandle">⋮⋮</div>
+      <div id="panelHandle" title="Drag / click to toggle">⋮⋮</div>
 
       <div id="panelInner">
         <input id="q" class="input" placeholder="Search…" autocomplete="off" />
@@ -473,12 +699,15 @@
         </div>
 
         <div class="small" style="margin-top:10px; opacity:.9" id="offlineHint"></div>
+        <div class="small" style="margin-top:8px; opacity:.7">
+          Tip: Press <span class="kbd">Enter</span> to search • Tap the map to pin a destination
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-  const APP_VERSION = "1.3";
+  const APP_VERSION = "1.2";
 
   // Athens bounds (looser so you can reach Piraeus etc.)
   const ATHENS_BBOX = { west: 23.35, south: 37.70, east: 24.35, north: 38.30 };
@@ -518,24 +747,34 @@
   const toastWrap = document.getElementById("toastWrap");
   const weatherCard = document.getElementById("weatherCard");
 
-  const navCard = document.getElementById("navCard");
-  const navInstr = document.getElementById("navInstr");
-  const navSub = document.getElementById("navSub");
+  // Nav HUD
+  const navHud = document.getElementById("navHud");
+  const navPrimary = document.getElementById("navPrimary");
+  const navSecondary = document.getElementById("navSecondary");
+  const navMeta = document.getElementById("navMeta");
   const navPrev = document.getElementById("navPrev");
   const navNext = document.getElementById("navNext");
   const navClose = document.getElementById("navClose");
   const navVoice = document.getElementById("navVoice");
   const navFollowBtn = document.getElementById("navFollow");
-  const navCenter = document.getElementById("navCenter");
+  const navMe = document.getElementById("navMe");
+  const navTurnSvg = document.getElementById("navTurnSvg");
 
+  // Zoom
   const zoomInBtn = document.getElementById("zoomIn");
   const zoomOutBtn = document.getElementById("zoomOut");
 
+  // Panel
   const panel = document.getElementById("panel");
   const panelHandle = document.getElementById("panelHandle");
   const panelRestore = document.getElementById("panelRestore");
   const offlineHint = document.getElementById("offlineHint");
 
+  // Compass
+  const compass = document.getElementById("compass");
+  const needle = document.getElementById("needle");
+
+  // Modal
   const modal = document.getElementById("modal");
   const modalClose = document.getElementById("modalClose");
   const modalTitle = document.getElementById("modalTitle");
@@ -575,17 +814,24 @@
   let myDot = null;
   let myArrow = null;
 
-  // Storage keys
-  const SAVED_KEY = "athnav_saved_v13";
-  const RECENT_KEY = "athnav_recent_v13";
-  const UI_KEY = "athnav_ui_v13";
-  const LAST_RESULTS_KEY = "athnav_last_results_v13";
+  // Storage keys (v1.2), with migration from v1.3 if present
+  const SAVED_KEY = "athnav_saved_v12";
+  const RECENT_KEY = "athnav_recent_v12";
+  const UI_KEY = "athnav_ui_v12";
+  const LAST_RESULTS_KEY = "athnav_last_results_v12";
+
+  const OLD_KEYS = {
+    SAVED: "athnav_saved_v13",
+    RECENT: "athnav_recent_v13",
+    UI: "athnav_ui_v13",
+    LAST: "athnav_last_results_v13",
+  };
 
   // State
   let results = [];
   let selectedIndex = -1;
 
-  let myLocation = null;
+  let myLocation = null; // {lat, lon, bearingDeg, lastUpdate, lastRerouteAt}
   let trackingOn = true;
   let followOn = true;
   let watchId = null;
@@ -597,11 +843,17 @@
     stepIndex: 0,
     distanceM: null,
     durationS: null,
-    voiceStyle: "off"
+    voiceStyle: "off" // off | soft
   };
 
-  let armSave = null;
+  // For saving via map click
+  let armSave = null; // {type:"fixed", key} | {type:"custom", name}
+
+  // Panel open state
   let panelOpen = true;
+
+  // Compass heading state
+  let deviceHeadingDeg = null; // null if unavailable
 
   // Utils
   function escapeHtml(s) {
@@ -610,19 +862,24 @@
     }[m]));
   }
 
-  // Loading: minimum visible time
   let loadingShownAt = 0;
-  const MIN_LOADING_MS = 450;
+  const MIN_LOADING_MS = 900;
+
   function setLoading(on, text="Working…") {
     loadingText.textContent = text;
+
     if (on) {
       loadingShownAt = Date.now();
       loadingOverlay.style.display = "flex";
       return;
     }
+
     const elapsed = Date.now() - loadingShownAt;
     const wait = Math.max(0, MIN_LOADING_MS - elapsed);
-    setTimeout(() => { loadingOverlay.style.display = "none"; }, wait);
+
+    setTimeout(() => {
+      loadingOverlay.style.display = "none";
+    }, wait);
   }
 
   function toast(title, msg, type="info", ms=3200) {
@@ -704,6 +961,27 @@
     return a;
   }
 
+  function isDesktop(){
+    return window.matchMedia("(min-width: 721px)").matches;
+  }
+
+  function setCompassVisible(on){
+    if (isDesktop()) { compass.classList.remove("show"); return; }
+    if (on) compass.classList.add("show");
+    else compass.classList.remove("show");
+  }
+
+  function setNavActive(on){
+    document.body.classList.toggle("nav-active", !!on);
+    if (on) {
+      navHud.classList.add("show");
+      setCompassVisible(true);
+    } else {
+      navHud.classList.remove("show");
+      setCompassVisible(false);
+    }
+  }
+
   // Offline hint
   function updateOfflineHint(){
     offlineHint.textContent = navigator.onLine
@@ -718,7 +996,7 @@
     if (!("serviceWorker" in navigator)) return;
     try{
       const swCode = `
-        const CACHE = "athens-navigator-v13";
+        const CACHE = "athens-navigator-v12";
         self.addEventListener("install", (e) => e.waitUntil(self.skipWaiting()));
         self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
         self.addEventListener("fetch", (e) => {
@@ -746,6 +1024,24 @@
       const blob = new Blob([swCode], { type: "text/javascript" });
       const swUrl = URL.createObjectURL(blob);
       await navigator.serviceWorker.register(swUrl);
+    } catch {}
+  }
+
+  // ===== Migration (v1.3 -> v1.2 keys) =====
+  function migrateIfNeeded(){
+    try{
+      if (!localStorage.getItem(SAVED_KEY) && localStorage.getItem(OLD_KEYS.SAVED)){
+        localStorage.setItem(SAVED_KEY, localStorage.getItem(OLD_KEYS.SAVED));
+      }
+      if (!localStorage.getItem(RECENT_KEY) && localStorage.getItem(OLD_KEYS.RECENT)){
+        localStorage.setItem(RECENT_KEY, localStorage.getItem(OLD_KEYS.RECENT));
+      }
+      if (!localStorage.getItem(UI_KEY) && localStorage.getItem(OLD_KEYS.UI)){
+        localStorage.setItem(UI_KEY, localStorage.getItem(OLD_KEYS.UI));
+      }
+      if (!localStorage.getItem(LAST_RESULTS_KEY) && localStorage.getItem(OLD_KEYS.LAST)){
+        localStorage.setItem(LAST_RESULTS_KEY, localStorage.getItem(OLD_KEYS.LAST));
+      }
     } catch {}
   }
 
@@ -797,7 +1093,7 @@
           width:34px;height:34px;border-radius:999px;
           border:1px solid rgba(255,255,255,.18);
           background:rgba(17,19,24,.92);
-          box-shadow: var(--shadow);
+          box-shadow: 0 10px 30px rgba(0,0,0,.35);
           font-size:17px;
         ">${escapeHtml(emoji)}</div>
       `,
@@ -814,7 +1110,7 @@
           width:34px;height:34px;border-radius:999px;
           border:1px solid rgba(255,255,255,.18);
           background:rgba(17,19,24,.92);
-          box-shadow: var(--shadow);
+          box-shadow: 0 10px 30px rgba(0,0,0,.35);
           display:flex;align-items:center;justify-content:center;
           font-weight:900;font-size:14px;
         ">${escapeHtml(initial)}</div>
@@ -912,7 +1208,7 @@
     });
   }
 
-  // Voice (still depends on browser voices; we just make it less terrible)
+  // ===== Voice (soft defaults, less robotic) =====
   let cachedVoices = [];
   function refreshVoices(){
     cachedVoices = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
@@ -921,42 +1217,45 @@
     refreshVoices();
     speechSynthesis.onvoiceschanged = refreshVoices;
   }
-  function pickBestVoice(){
+
+  function pickVoice(){
     if (!cachedVoices.length) refreshVoices();
-    const greek = cachedVoices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
-    const bestScore = (v) => {
-      const name = (v.name || "").toLowerCase();
-      let s = 0;
-      if (/natural|neural/.test(name)) s += 4;
-      if (/google|microsoft|apple/.test(name)) s += 2;
-      if (/siri/.test(name)) s += 1;
-      return s;
-    };
-    const pick = (arr) => arr.slice().sort((a,b)=> bestScore(b)-bestScore(a))[0] || null;
-    return pick(greek) || pick(cachedVoices) || null;
+    const voices = cachedVoices || [];
+    const greek = voices.filter(v => (v.lang || "").toLowerCase().startsWith("el"));
+    const preferNatural = (arr) => arr.find(v => /natural|neural/i.test(v.name || "")) || null;
+    const pickAny = (arr) => arr[0] || null;
+    return preferNatural(greek) || pickAny(greek) || preferNatural(voices) || pickAny(voices) || null;
   }
+
   function speak(text){
     try{
       if (nav.voiceStyle === "off") return;
       if (!("speechSynthesis" in window)) return;
-      const voice = pickBestVoice();
+
+      const voice = pickVoice();
       const u = new SpeechSynthesisUtterance(String(text));
       if (voice){
         u.voice = voice;
         u.lang = voice.lang || "en-US";
+      } else {
+        u.lang = "en-US";
       }
-      u.rate = 0.95;
-      u.pitch = 1.02;
-      u.volume = 0.9;
+
+      // Softer, calmer
+      u.rate = 1.02;
+      u.pitch = 1.00;
+      u.volume = 0.95;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch {}
   }
+
   function updateVoiceBtn(){
-    navVoice.textContent = nav.voiceStyle === "off" ? "🔈 Voice: Off" : "🔈 Voice: On";
+    navVoice.textContent = nav.voiceStyle === "off" ? "Voice: Off" : "Voice: Soft";
   }
 
-  // Weather
+  // ===== Weather =====
   function weatherIcon(code) {
     code = Number(code);
     if (code === 0) return "☀️";
@@ -970,6 +1269,8 @@
   }
 
   async function updateWeather(lat, lon){
+    if (document.body.classList.contains("nav-active")) return; // keep clean during nav
+
     weatherCard.style.display = "block";
     weatherCard.innerHTML = `
       <div style="font-weight:900">Weather</div>
@@ -999,22 +1300,58 @@
     }
   }
 
+  // ===== Navigation visuals (SVG) =====
+  function setTurnIcon(kind){
+    // kind: "straight" | "left" | "right" | "uturn" | "roundabout" | "arrive" | "depart"
+    const icon = (k) => {
+      if (k === "left") return `
+        <path d="M14 19v-7.2c0-2.2-1.8-4-4-4H7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7 7l3-3M7 7l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      if (k === "right") return `
+        <path d="M10 19v-7.2c0-2.2 1.8-4 4-4h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M17 7l-3-3M17 7l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      if (k === "uturn") return `
+        <path d="M12 20v-9c0-2.8 2.2-5 5-5h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 6l-3-3M18 6l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      if (k === "arrive") return `
+        <path d="M6 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M9 18V8l6-2v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="14" cy="9" r="1" fill="currentColor"/>
+      `;
+      if (k === "depart") return `
+        <path d="M12 20V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 6l-4 4M12 6l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      if (k === "roundabout") return `
+        <path d="M12 4a8 8 0 1 0 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 12l-3-2M20 12l-2-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+      // straight default
+      return `
+        <path d="M12 20V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 6l-4 4M12 6l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+    };
+
+    navTurnSvg.innerHTML = icon(kind);
+  }
+
   // Routing + nav steps
-  function maneuverIcon(step){
+  function maneuverKind(step){
     const m = step.maneuver || {};
     const type = (m.type || "").toLowerCase();
     const mod = (m.modifier || "").toLowerCase();
-    if (type === "arrive") return "🏁";
-    if (type === "depart") return "🚩";
-    if (type === "roundabout") return "🔄";
-    if (type === "uturn") return "↩️";
-    if (mod.includes("left")) return "⬅️";
-    if (mod.includes("right")) return "➡️";
-    if (mod.includes("straight")) return "⬆️";
-    if (type === "merge") return "⤴️";
-    if (type === "fork") return "🍴";
-    if (type === "continue") return "⬆️";
-    return "➡️";
+
+    if (type === "arrive") return "arrive";
+    if (type === "depart") return "depart";
+    if (type === "roundabout") return "roundabout";
+    if (type === "uturn") return "uturn";
+    if (mod.includes("left")) return "left";
+    if (mod.includes("right")) return "right";
+    return "straight";
   }
 
   function buildInstruction(step){
@@ -1048,9 +1385,11 @@
 
     nav.mode = modeSel.value || "walking";
     setStatus("Calculating route…");
-    navCard.style.display = "block";
-    navInstr.textContent = "Calculating route…";
-    navSub.textContent = "—";
+    setNavActive(true);
+    navPrimary.textContent = "Calculating route…";
+    navSecondary.textContent = "—";
+    navMeta.textContent = "—";
+    setTurnIcon("depart");
 
     try{
       const url =
@@ -1066,7 +1405,7 @@
       const coords = route.geometry?.coordinates || [];
       const latlngs = coords.map(c => [c[1], c[0]]);
       if (routeLine) routeLine.remove();
-      routeLine = L.polyline(latlngs).addTo(map);
+      routeLine = L.polyline(latlngs, { weight: 5, opacity: .9 }).addTo(map);
 
       const leg = route.legs?.[0];
       const steps = Array.isArray(leg?.steps) ? leg.steps : [];
@@ -1075,7 +1414,8 @@
         duration: s.duration,
         name: s.name || "",
         maneuver: s.maneuver || {},
-        instruction: buildInstruction(s)
+        instruction: buildInstruction(s),
+        kind: maneuverKind(s)
       }));
 
       nav.stepIndex = 0;
@@ -1089,7 +1429,7 @@
       setStatus("Route failed.");
       toast("Route error", "Could not calculate route. Try again.", "bad");
       nav.steps = [];
-      navCard.style.display = "none";
+      setNavActive(false);
     }
   }
 
@@ -1100,16 +1440,21 @@
     nav.stepIndex = i;
 
     const s = nav.steps[i];
-    const icon = maneuverIcon(s);
-    navInstr.textContent = `${icon} ${s.instruction}`;
+    setTurnIcon(s.kind || "straight");
 
-    navSub.textContent =
-      `Step ${i+1}/${nav.steps.length} · ${formatDistanceMeters(s.distance)} · Total ${formatDistanceMeters(nav.distanceM)} · ~${formatDuration(nav.durationS)} (${nav.mode})`;
+    navPrimary.textContent = s.instruction;
+    navSecondary.textContent = `${formatDistanceMeters(s.distance)} • Step ${i+1}/${nav.steps.length}`;
+
+    navMeta.textContent = `Total ${formatDistanceMeters(nav.distanceM)} • ~${formatDuration(nav.durationS)} • ${nav.mode}`;
 
     navPrev.disabled = (i === 0);
     navNext.disabled = (i === nav.steps.length - 1);
 
-    if (nav.voiceStyle !== "off") speak(s.instruction);
+    // Voice: speak less aggressively
+    if (nav.voiceStyle !== "off") {
+      // avoid talking for tiny steps
+      if (Number(s.distance) >= 25 || s.kind === "arrive") speak(s.instruction);
+    }
 
     if (followOn){
       const loc = s.maneuver?.location;
@@ -1124,7 +1469,7 @@
     nav.stepIndex = 0;
     nav.distanceM = null;
     nav.durationS = null;
-    navCard.style.display = "none";
+    setNavActive(false);
   }
 
   // Destination marker
@@ -1380,6 +1725,7 @@
 
   // Live tracking + arrow
   function arrowIcon(deg){
+    const d = Number.isFinite(deg) ? deg : 0;
     return L.divIcon({
       className:"",
       html: `
@@ -1388,9 +1734,11 @@
           border:1px solid rgba(255,255,255,.18);
           background:rgba(17,19,24,.92);
           display:flex;align-items:center;justify-content:center;
-          box-shadow: var(--shadow);
+          box-shadow: 0 10px 30px rgba(0,0,0,.35);
         ">
-          <div style="transform: rotate(${deg}deg); font-size:18px;">➤</div>
+          <svg viewBox="0 0 24 24" width="18" height="18" style="transform: rotate(${d}deg); opacity:.95">
+            <path d="M12 3l6 18-6-4-6 4 6-18z" fill="rgba(255,255,255,.92)"/>
+          </svg>
         </div>
       `,
       iconSize:[34,34],
@@ -1452,6 +1800,11 @@
 
         setMyMarkers(use.lat, use.lon, b);
 
+        // Compass: if device heading unavailable, show GPS bearing
+        if (deviceHeadingDeg == null) {
+          needle.style.transform = `rotate(${(-b)}deg)`;
+        }
+
         if (followOn) map.panTo([use.lat, use.lon], { animate:true });
 
         if (nav.dest && (Date.now() - myLocation.lastRerouteAt) > 12000){
@@ -1480,6 +1833,7 @@
     else stopTracking();
   }
 
+  // Some browsers require a user gesture for GPS
   let trackingArmed = true;
   function armTrackingOnce(){
     if (!trackingArmed) return;
@@ -1487,6 +1841,69 @@
     if (trackingOn) startTracking();
     window.removeEventListener("pointerdown", armTrackingOnce, true);
   }
+
+  // Device compass (best effort)
+  async function initDeviceCompass(){
+    if (isDesktop()) return;
+
+    const handler = (e) => {
+      // iOS: webkitCompassHeading is 0..360 where 0 is North
+      // Android: alpha is 0..360 where 0 is North (device dependent; still useful)
+      let heading = null;
+      if (typeof e.webkitCompassHeading === "number") heading = e.webkitCompassHeading;
+      else if (typeof e.alpha === "number") heading = e.alpha;
+
+      if (!Number.isFinite(heading)) return;
+      deviceHeadingDeg = heading;
+
+      // Rotate needle opposite so it points North relative to screen
+      needle.style.transform = `rotate(${(-heading)}deg)`;
+    };
+
+    try{
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"){
+        // iOS permission flow
+        // Ask only when user taps compass
+        compass.addEventListener("click", async ()=>{
+          try{
+            const perm = await DeviceOrientationEvent.requestPermission();
+            if (perm === "granted"){
+              window.addEventListener("deviceorientation", handler, true);
+              toast("Compass", "Compass enabled.", "ok", 1800);
+            } else {
+              toast("Compass", "Permission denied.", "bad", 2400);
+            }
+          } catch {
+            toast("Compass", "Could not enable compass.", "bad", 2400);
+          }
+        }, { once:false });
+      } else if ("DeviceOrientationEvent" in window){
+        window.addEventListener("deviceorientationabsolute", handler, true);
+        window.addEventListener("deviceorientation", handler, true);
+      }
+    } catch {}
+  }
+
+  // Map click
+  map.on("click", (e) => {
+    const { lat, lng } = e.latlng;
+
+    if (armSave){
+      if (armSave.type === "fixed"){
+        setFixedPlace(armSave.key, lat, lng);
+        toast("Saved", `${armSave.key} updated.`, "ok");
+      } else if (armSave.type === "custom"){
+        addCustomPlace(armSave.name, lat, lng);
+        toast("Saved", `"${armSave.name}" added.`, "ok");
+      }
+      armSave = null;
+      return;
+    }
+
+    setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
+    toast("Pinned", "Destination pinned. Calculating route…", "info");
+  });
 
   // Clear
   function clearAll(){
@@ -1502,23 +1919,24 @@
     resultsList.innerHTML = "";
     resultsMeta.textContent = "—";
     setStatus("Ready");
+    if (!document.body.classList.contains("nav-active")) weatherCard.style.display = "none";
     cacheUiState();
   }
 
-  // Panel open/close + restore button visibility
+  // Panel slide
   function setPanelOpen(open){
     panelOpen = !!open;
 
-    if (window.matchMedia("(min-width: 721px)").matches){
-      panel.style.transform = panelOpen ? "translateX(0)" : "translateX(110%)";
+    if (isDesktop()){
+      panel.style.transform = panelOpen ? "translateX(0)" : "translateX(112%)";
     } else {
-      panel.style.transform = panelOpen ? "translateY(0)" : "translateY(72%)";
+      panel.style.transform = panelOpen ? "translateY(0)" : "translateY(78%)";
     }
 
     panelToggleBtn.textContent = panelOpen ? "▾" : "▸";
-    panelRestore.style.display = panelOpen ? "none" : "block";
-
+    panelRestore.classList.toggle("show", !panelOpen);
     setTimeout(()=>map.invalidateSize(), 80);
+    cacheUiState();
   }
 
   function initPanelDrag(){
@@ -1526,15 +1944,13 @@
     let startTransform = 0;
     let dragging = false;
 
-    const isDesktop = () => window.matchMedia("(min-width: 721px)").matches;
-
     panelHandle.addEventListener("pointerdown", (e)=>{
       dragging = true;
       panelHandle.setPointerCapture(e.pointerId);
       startY = e.clientY;
 
       const m = panel.style.transform.match(/translateY\(([-0-9.]+)%\)/);
-      startTransform = m ? Number(m[1]) : (panelOpen ? 0 : 72);
+      startTransform = m ? Number(m[1]) : (panelOpen ? 0 : 78);
     });
 
     panelHandle.addEventListener("pointermove", (e)=>{
@@ -1543,7 +1959,7 @@
       const dy = e.clientY - startY;
       const percent = (dy / window.innerHeight) * 100;
       let next = startTransform + percent;
-      next = Math.min(Math.max(next, 0), 78);
+      next = Math.min(Math.max(next, 0), 82);
       panel.style.transition = "none";
       panel.style.transform = `translateY(${next}%)`;
     });
@@ -1555,7 +1971,7 @@
       if (isDesktop()) return;
       const m = panel.style.transform.match(/translateY\(([-0-9.]+)%\)/);
       const cur = m ? Number(m[1]) : 0;
-      if (cur > 38) setPanelOpen(false);
+      if (cur > 40) setPanelOpen(false);
       else setPanelOpen(true);
     });
 
@@ -1710,6 +2126,7 @@
         voiceStyle: nav.voiceStyle || "off",
         followOn: !!followOn,
         trackingOn: !!trackingOn,
+        panelOpen: !!panelOpen,
         lastDest: nav.dest ? { lat: nav.dest.lat, lon: nav.dest.lon, name: nav.dest.name, address: nav.dest.address } : null,
         lastResults: results.slice(0, 200),
         selectedIndex
@@ -1727,9 +2144,10 @@
     if (state.voiceStyle) nav.voiceStyle = state.voiceStyle;
     if (typeof state.followOn === "boolean") followOn = state.followOn;
     if (typeof state.trackingOn === "boolean") trackingOn = state.trackingOn;
+    if (typeof state.panelOpen === "boolean") panelOpen = state.panelOpen;
 
     updateVoiceBtn();
-    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
+    navFollowBtn.textContent = followOn ? "Follow: On" : "Follow: Off";
     setTrackingBtn();
 
     if (Array.isArray(state.lastResults) && state.lastResults.length){
@@ -1747,26 +2165,6 @@
     }
   }
 
-  // Map click
-  map.on("click", (e) => {
-    const { lat, lng } = e.latlng;
-
-    if (armSave){
-      if (armSave.type === "fixed"){
-        setFixedPlace(armSave.key, lat, lng);
-        toast("Saved", `${armSave.key} updated.`, "ok");
-      } else if (armSave.type === "custom"){
-        addCustomPlace(armSave.name, lat, lng);
-        toast("Saved", `"${armSave.name}" added.`, "ok");
-      }
-      armSave = null;
-      return;
-    }
-
-    setDestination({ lat, lon: lng, name: "Pinned location", address: "" });
-    toast("Pinned", "Destination pinned. Calculating route…", "info");
-  });
-
   // Buttons wiring
   btn.addEventListener("click", ()=>doSearch());
   qEl.addEventListener("keydown", (e)=>{
@@ -1777,6 +2175,32 @@
   qEl.addEventListener("blur", ()=> setTimeout(hideSuggest, 140));
 
   nearBtn.addEventListener("click", nearMe);
+
+  myLocBtn.addEventListener("click", ()=>{
+    if (trackingOn && myLocation) {
+      map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
+      toast("Centered", "Centered on your location.", "info", 1400);
+      return;
+    }
+    if (!navigator.geolocation) return toast("Unsupported", "Your browser does not support location.", "bad");
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        const rawLat = pos.coords.latitude, rawLon = pos.coords.longitude;
+        const outside = !inAthens(rawLat, rawLon);
+        const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
+        myLocation = myLocation || {};
+        myLocation.lat = use.lat; myLocation.lon = use.lon; myLocation.bearingDeg = 0; myLocation.lastUpdate = Date.now();
+        setMyMarkers(use.lat, use.lon, 0);
+        map.setView([use.lat, use.lon], 15);
+        toast(outside ? "Outside Athens" : "Location set", outside ? "GPS outside Athens (clamped).": "GPS acquired.", outside ? "info":"ok", 3200);
+        if (nav.dest) startRoute();
+        cacheUiState();
+      },
+      (err)=> toast("Location error", err?.message || "Could not get location.", "bad", 5200),
+      { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+    );
+  });
+
   savedBtn.addEventListener("click", renderSavedManager);
 
   trackBtn.addEventListener("click", ()=>{
@@ -1799,61 +2223,49 @@
   panelToggleBtn.addEventListener("click", ()=> setPanelOpen(!panelOpen));
   panelRestore.addEventListener("click", ()=> setPanelOpen(true));
 
+  // Nav HUD controls
   navPrev.addEventListener("click", ()=>{ nav.stepIndex = Math.max(0, nav.stepIndex - 1); showNavStep(); });
   navNext.addEventListener("click", ()=>{ nav.stepIndex = Math.min(nav.steps.length - 1, nav.stepIndex + 1); showNavStep(); });
-  navClose.addEventListener("click", ()=>{ stopNav(); toast("Navigation ended", "Route panel closed.", "info"); });
+  navClose.addEventListener("click", ()=>{
+    stopNav();
+    toast("Navigation ended", "Route panel closed.", "info");
+  });
 
   navVoice.addEventListener("click", ()=>{
-    nav.voiceStyle = (nav.voiceStyle === "off") ? "on" : "off";
+    nav.voiceStyle = (nav.voiceStyle === "off") ? "soft" : "off";
     updateVoiceBtn();
-    toast("Voice", nav.voiceStyle === "off" ? "Voice disabled." : "Voice enabled (browser voice).", "info");
+    toast("Voice", nav.voiceStyle === "off" ? "Voice disabled." : "Soft voice enabled.", "info");
     cacheUiState();
   });
 
   navFollowBtn.addEventListener("click", ()=>{
     followOn = !followOn;
-    navFollowBtn.textContent = followOn ? "🧭 Follow: On" : "🧭 Follow: Off";
+    navFollowBtn.textContent = followOn ? "Follow: On" : "Follow: Off";
     toast("Follow", followOn ? "Map will follow you." : "Follow disabled.", "info");
     cacheUiState();
   });
 
-  // "Me" button: center on your GPS, else toast
-  navCenter.addEventListener("click", ()=>{
+  navMe.addEventListener("click", ()=>{
     if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-    else toast("No location yet", "Tap My location first.", "info");
+    else toast("No GPS yet", "Tap My location first.", "info", 2200);
   });
 
+  // Zoom
   zoomInBtn.addEventListener("click", ()=> map.zoomIn());
   zoomOutBtn.addEventListener("click", ()=> map.zoomOut());
 
-  // My Location button
-  myLocBtn.addEventListener("click", ()=>{
-    if (trackingOn && myLocation) {
-      map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
-      toast("Centered", "Centered on your location.", "info", 1800);
-      return;
-    }
-    if (!navigator.geolocation) return toast("Unsupported", "Your browser does not support location.", "bad");
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>{
-        const rawLat = pos.coords.latitude, rawLon = pos.coords.longitude;
-        const outside = !inAthens(rawLat, rawLon);
-        const use = outside ? clampToAthens(rawLat, rawLon) : { lat: rawLat, lon: rawLon };
-        myLocation = myLocation || {};
-        myLocation.lat = use.lat; myLocation.lon = use.lon; myLocation.bearingDeg = 0; myLocation.lastUpdate = Date.now();
-        setMyMarkers(use.lat, use.lon, 0);
-        map.setView([use.lat, use.lon], 15);
-        toast(outside ? "Outside Athens" : "Location set", outside ? "GPS outside Athens (clamped).": "GPS acquired.", outside ? "info":"ok", 4200);
-        if (nav.dest) startRoute();
-        cacheUiState();
-      },
-      (err)=> toast("Location error", err?.message || "Could not get location.", "bad", 5200),
-      { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
-    );
+  // Compass tap: north-up + center on me if following
+  compass.addEventListener("click", ()=>{
+    // If already navigating, center on me; otherwise just reset bearing visual
+    if (myLocation) map.setView([myLocation.lat, myLocation.lon], Math.max(map.getZoom(), 15));
+    // Visual reset (we can’t truly rotate tiles in Leaflet without extra plugins)
+    toast("Compass", "North-up view (map is fixed).", "info", 1400);
   });
 
   // Init
   window.addEventListener("DOMContentLoaded", async ()=>{
+    migrateIfNeeded();
+
     setTimeout(()=>{ splash.classList.add("hidden"); }, 900);
     map.once("load", ()=> setTimeout(()=> splash.classList.add("hidden"), 300));
 
@@ -1862,14 +2274,15 @@
     renderSavedMarkers();
     restoreUiState();
     initPanelDrag();
-    setPanelOpen(true);
+    setPanelOpen(panelOpen);
 
     applyTrackingDesiredState();
     window.addEventListener("pointerdown", armTrackingOnce, true);
 
     registerSW();
+    initDeviceCompass();
 
-    toast("Athens Navigator", `v${APP_VERSION} ready. Tap the map to pin a destination.`, "info", 2800);
+    toast("Athens Navigator", `v${APP_VERSION} ready. Tap the map to pin a destination.`, "info", 2600);
   });
   </script>
 </body>
