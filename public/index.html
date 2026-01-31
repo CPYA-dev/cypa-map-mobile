@@ -1,13 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"
-  />
-  <meta name="theme-color" content="#0b1220" />
-  <title>ATHENS NAV • CPYA Map</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#0b1220"/>
+  <title>ATHENS NAV • CPYA</title>
 
   <!-- Leaflet -->
   <link
@@ -16,19 +13,14 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-
   <!-- Leaflet Routing Machine -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
 
   <style>
     :root{
-      --bg: #0b1220;
-      --bg2:#0f1a33;
-      --panel:#0e1730cc;
-      --panelSolid:#0e1730;
+      --bg:#0b1220;
+      --panel:#0e1730d9;
+      --panel2:#0e1730f2;
       --text:#eaf0ff;
       --muted:#b6c2e6;
       --line:#1d2a55;
@@ -38,9 +30,9 @@
       --warn:#ffcc66;
       --bad:#ff5c7a;
 
-      --radius: 16px;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --shadow2: 0 8px 18px rgba(0,0,0,.28);
+      --radius:16px;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --shadow2:0 8px 18px rgba(0,0,0,.28);
 
       --safeTop: env(safe-area-inset-top, 0px);
       --safeBottom: env(safe-area-inset-bottom, 0px);
@@ -51,361 +43,379 @@
       --dockH: 74px;
     }
 
-    * { box-sizing: border-box; }
-    html, body { height: 100%; width: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    a { color: inherit; }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    button,input,select{ font:inherit; }
+    a{ color:inherit; }
 
-    /* App layout */
-    .app {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      background: var(--bg);
-    }
+    .app{ position:fixed; inset:0; overflow:hidden; background:var(--bg); }
+    #map{ position:absolute; inset:0; z-index:1; background:#0a1020; }
 
-    #map {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      background: #0a1020;
-    }
-
-    /* Top app bar */
-    .appbar {
-      position: absolute;
+    /* Top bar */
+    .appbar{
+      position:absolute;
       left: calc(10px + var(--safeLeft));
       right: calc(10px + var(--safeRight));
       top: calc(10px + var(--safeTop));
       height: var(--appbarH);
-      z-index: 30;
-
-      display: flex;
-      gap: 10px;
-      align-items: center;
-
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: calc(var(--radius) + 6px);
-      background: linear-gradient(180deg, rgba(14,23,48,.92), rgba(14,23,48,.72));
-      backdrop-filter: blur(10px);
+      z-index: 60;
+      display:flex; gap:10px; align-items:center;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: calc(var(--radius) + 10px);
+      background: linear-gradient(180deg, rgba(14,23,48,.96), rgba(14,23,48,.78));
+      backdrop-filter: blur(12px);
       box-shadow: var(--shadow2);
     }
 
-    .iconbtn {
-      width: 42px; height: 42px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.08);
+    .iconbtn{
+      width:42px; height:42px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.09);
       background: rgba(255,255,255,.06);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      user-select: none;
+      color:var(--text);
+      display:grid; place-items:center;
+      cursor:pointer; user-select:none;
       -webkit-tap-highlight-color: transparent;
     }
-    .iconbtn:active { transform: scale(.98); }
-    .iconbtn svg { width: 20px; height: 20px; opacity: .95; }
+    .iconbtn:active{ transform:scale(.99); }
+    .iconbtn svg{ width:20px; height:20px; opacity:.95; }
 
-    .brand {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.1;
-      min-width: 84px;
-    }
-    .brand .t1 { font-weight: 800; letter-spacing: .2px; font-size: 14px; }
-    .brand .t2 { font-size: 11px; color: var(--muted); }
+    .brand{ display:flex; flex-direction:column; line-height:1.05; min-width:92px; }
+    .brand .t1{ font-weight:900; font-size:14px; letter-spacing:.2px; }
+    .brand .t2{ font-size:11px; color:rgba(234,240,255,.70); }
 
-    .search {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 12px;
-      height: 42px;
-
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
+    .search{
+      flex:1;
+      display:flex; align-items:center; gap:10px;
+      height:42px;
+      padding:0 12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.09);
       background: rgba(255,255,255,.06);
       min-width: 0;
     }
-
     .search input{
-      width: 100%;
-      border: 0;
-      outline: none;
-      background: transparent;
-      color: var(--text);
-      font-size: 14px;
+      width:100%;
+      border:0; outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:14px;
+      min-width:0;
       caret-color: var(--accent);
-      min-width: 0;
     }
-    .search input::placeholder{ color: rgba(234,240,255,.55); }
-    .pill {
-      padding: 6px 10px;
+    .search input::placeholder{ color:rgba(234,240,255,.55); }
+
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(78,161,255,.14);
+      font-size:12px;
+      display:flex; align-items:center; gap:6px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .pill .dot{ width:8px; height:8px; border-radius:99px; background:var(--good); box-shadow:0 0 0 3px rgba(35,196,131,.16); }
+
+    /* Widgets (time, weather, compass) */
+    .widgets{
+      position:absolute;
+      right: calc(10px + var(--safeRight));
+      top: calc(10px + var(--safeTop) + var(--appbarH) + 10px);
+      z-index: 55;
+      display:flex;
+      flex-direction: column;
+      gap:10px;
+      align-items:flex-end;
+      pointer-events:none;
+    }
+    .widget{
+      pointer-events:auto;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(14,23,48,.78);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow2);
+      padding:10px 12px;
+      min-width: 180px;
+    }
+    .widgetRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .widgetTitle{ font-size:12px; color:rgba(234,240,255,.72); }
+    .widgetValue{ font-weight:900; font-size:14px; }
+    .wSmall{ min-width: 150px; }
+
+    .weatherIcon{
+      width:26px; height:26px;
+      border-radius: 10px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.06);
+      display:grid; place-items:center;
+      flex: 0 0 auto;
+    }
+    .weatherIcon svg{ width:16px; height:16px; }
+
+    .compassWrap{ width: 160px; }
+    .compassBox{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+    .compass{
+      width: 96px; height: 96px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.10);
-      background: rgba(78,161,255,.14);
-      color: var(--text);
-      font-size: 12px;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      user-select: none;
+      background: radial-gradient(circle at 30% 25%, rgba(78,161,255,.18), rgba(255,255,255,.03) 55%);
+      position: relative;
+      display:grid; place-items:center;
+      overflow:hidden;
     }
-    .pill .dot{ width: 8px; height: 8px; border-radius: 99px; background: var(--good); box-shadow: 0 0 0 3px rgba(35,196,131,.15); }
+    .compass .n{
+      position:absolute; top:9px;
+      font-size:12px; font-weight:900;
+      color: rgba(234,240,255,.9);
+      letter-spacing:.5px;
+    }
+    .needle{
+      width: 3px; height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,92,122,.95), rgba(78,161,255,.9));
+      transform-origin: 50% 80%;
+      box-shadow: 0 10px 18px rgba(0,0,0,.35);
+    }
+    .miniBtn{
+      border-radius: 999px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .miniBtn.primary{
+      background: rgba(78,161,255,.18);
+      border-color: rgba(78,161,255,.34);
+    }
 
     /* Bottom dock */
-    .dock {
-      position: absolute;
+    .dock{
+      position:absolute;
       left: calc(10px + var(--safeLeft));
       right: calc(10px + var(--safeRight));
       bottom: calc(10px + var(--safeBottom));
       height: var(--dockH);
-      z-index: 30;
-
-      border-radius: calc(var(--radius) + 8px);
-      background: linear-gradient(180deg, rgba(14,23,48,.78), rgba(14,23,48,.92));
-      border: 1px solid rgba(255,255,255,.06);
+      z-index: 70;
+      border-radius: calc(var(--radius) + 10px);
+      background: linear-gradient(180deg, rgba(14,23,48,.74), rgba(14,23,48,.94));
+      border:1px solid rgba(255,255,255,.06);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 8px;
-      padding: 10px;
+      backdrop-filter: blur(14px);
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap:8px;
+      padding:10px;
     }
-
     .dockbtn{
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.06);
       background: rgba(255,255,255,.05);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      cursor: pointer;
-      user-select: none;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:6px;
+      cursor:pointer;
+      user-select:none;
       -webkit-tap-highlight-color: transparent;
       transition: transform .06s ease, background .15s ease, border .15s ease;
       min-width: 0;
     }
-    .dockbtn:active{ transform: scale(.99); }
-    .dockbtn svg{ width: 20px; height: 20px; opacity: .95; }
-    .dockbtn span{ font-size: 11px; color: rgba(234,240,255,.85); }
+    .dockbtn svg{ width:20px; height:20px; opacity:.95; }
+    .dockbtn span{ font-size:11px; color:rgba(234,240,255,.86); }
+    .dockbtn:active{ transform:scale(.99); }
     .dockbtn.active{
       background: linear-gradient(135deg, rgba(78,161,255,.22), rgba(124,92,255,.18));
-      border-color: rgba(78,161,255,.35);
+      border-color: rgba(78,161,255,.38);
     }
 
-    /* Floating panel (results / directions) */
-    .sheet {
-      position: absolute;
+    /* Smaller zoom controls */
+    .zoomBarWrap{
+      position:absolute;
+      left:50%;
+      transform: translateX(-50%);
+      bottom: calc(10px + var(--safeBottom) + var(--dockH) + 12px);
+      z-index: 65;
+      pointer-events:none;
+    }
+    .zoomBar{
+      pointer-events:auto;
+      display:flex;
+      gap:8px;
+      padding:6px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(14,23,48,.76);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow2);
+    }
+    .zoomBtn{
+      width:34px; height:34px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.06);
+      display:grid; place-items:center;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .zoomBtn svg{ width:18px; height:18px; }
+
+    /* Main panel (search/results/route) */
+    .sheet{
+      position:absolute;
       left: calc(10px + var(--safeLeft));
       right: calc(10px + var(--safeRight));
       top: calc(10px + var(--safeTop) + var(--appbarH) + 10px);
       bottom: calc(10px + var(--safeBottom) + var(--dockH) + 10px);
-      z-index: 25;
-      pointer-events: none; /* only inner parts clickable */
-      display: flex;
-      align-items: flex-start;
-      justify-content: flex-start;
+      z-index: 52;
+      pointer-events:none;
+      display:flex;
+      justify-content:flex-start;
+      align-items:flex-start;
     }
-
-    .panel {
-      pointer-events: auto;
+    .panel{
+      pointer-events:auto;
       width: min(560px, 100%);
       max-height: 100%;
-      border-radius: calc(var(--radius) + 10px);
-      background: rgba(14,23,48,.70);
-      border: 1px solid rgba(255,255,255,.06);
+      border-radius: calc(var(--radius) + 12px);
+      background: rgba(14,23,48,.74);
+      border:1px solid rgba(255,255,255,.06);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-      overflow: hidden;
-      display: none;
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+      display:none;
     }
-    .panel.show{ display: block; }
-
+    .panel.show{ display:block; }
     .panelHeader{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      display:flex; align-items:center; justify-content:space-between;
       padding: 12px 12px;
       border-bottom: 1px solid rgba(255,255,255,.06);
       background: rgba(14,23,48,.62);
+      gap:10px;
     }
-    .panelHeader .title{
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .panelHeader .title strong{
-      font-size: 14px;
-      letter-spacing: .2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .panelHeader .title small{
-      color: rgba(234,240,255,.72);
-      font-size: 12px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .panelBody{
-      padding: 10px;
-      overflow: auto;
-      max-height: calc(100% - 54px);
-    }
-
-    .list{
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .panelHeader .title{ min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .panelHeader .title strong{ font-size:14px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .panelHeader .title small{ font-size:12px; color:rgba(234,240,255,.72); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .panelBody{ padding:10px; overflow:auto; max-height: calc(100% - 54px); }
+    .list{ display:flex; flex-direction:column; gap:10px; }
 
     .card{
-      padding: 12px;
+      padding:12px;
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.07);
       background: rgba(255,255,255,.05);
       box-shadow: 0 8px 18px rgba(0,0,0,.14);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display:flex; flex-direction:column; gap:8px;
     }
-
-    .row{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .card .name{
-      font-weight: 700;
-      font-size: 14px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .card .addr{
-      color: rgba(234,240,255,.75);
-      font-size: 12px;
-      line-height: 1.35;
-    }
-
-    .chips{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name{ font-weight:900; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .addr{ color:rgba(234,240,255,.76); font-size:12px; line-height:1.35; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
     .chip{
       border-radius: 999px;
       padding: 7px 10px;
       border: 1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.06);
       font-size: 12px;
-      color: rgba(234,240,255,.9);
-      user-select: none;
-      cursor: pointer;
+      cursor:pointer;
+      user-select:none;
       -webkit-tap-highlight-color: transparent;
     }
     .chip.primary{
       background: rgba(78,161,255,.18);
-      border-color: rgba(78,161,255,.32);
+      border-color: rgba(78,161,255,.34);
     }
-    .chip:active{ transform: scale(.99); }
 
-    /* Sidebar (drawer) */
-    .overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 40;
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(3px);
-      display: none;
-    }
-    .overlay.show{ display: block; }
-
-    .drawer {
-      position: absolute;
-      top: 0; bottom: 0;
-      left: 0;
-      width: min(360px, 86vw);
-      z-index: 45;
-      background: linear-gradient(180deg, rgba(14,23,48,.98), rgba(11,18,32,.98));
-      border-right: 1px solid rgba(255,255,255,.06);
-      box-shadow: 20px 0 40px rgba(0,0,0,.38);
-      transform: translateX(-102%);
-      transition: transform .22s ease;
-      padding: calc(12px + var(--safeTop)) 12px calc(12px + var(--safeBottom)) 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .drawer.show{ transform: translateX(0); }
-
-    .drawer .section{
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 18px;
+    /* Turn-by-turn */
+    .step{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.06);
       background: rgba(255,255,255,.04);
-      overflow: hidden;
     }
-    .drawer .section .secHead{
-      padding: 12px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .drawer .section .secHead strong{ font-size: 13px; }
-    .drawer .section .secBody{ padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .toggleRow{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .toggleRow label{
-      font-size: 13px;
-      color: rgba(234,240,255,.9);
-    }
-
-    .switch{
-      width: 48px; height: 28px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
+    .stepLeft{ display:flex; gap:10px; min-width:0; }
+    .stepIcon{
+      width:34px; height:34px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.06);
-      position: relative;
-      cursor: pointer;
-      flex: 0 0 auto;
-      user-select: none;
+      display:grid; place-items:center;
+      flex:0 0 auto;
     }
-    .switch::after{
-      content:"";
-      width: 22px; height: 22px;
-      border-radius: 999px;
-      position: absolute;
-      top: 2px; left: 2px;
-      background: rgba(234,240,255,.92);
-      transition: left .16s ease, background .16s ease;
-      box-shadow: 0 8px 14px rgba(0,0,0,.25);
-    }
-    .switch.on{
-      background: rgba(78,161,255,.22);
-      border-color: rgba(78,161,255,.35);
-    }
-    .switch.on::after{ left: 24px; background: #ffffff; }
+    .stepIcon svg{ width:18px; height:18px; }
+    .stepText{ min-width:0; }
+    .stepText .t{ font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .stepText .s{ font-size:12px; color:rgba(234,240,255,.70); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .stepDist{ font-size:12px; color:rgba(234,240,255,.75); flex:0 0 auto; }
 
-    .select, .textField{
-      width: 100%;
+    /* Near Me bottom sheet (tap + slide) */
+    .nearSheet{
+      position:absolute;
+      left: calc(10px + var(--safeLeft));
+      right: calc(10px + var(--safeRight));
+      bottom: calc(10px + var(--safeBottom) + var(--dockH) + 10px);
+      z-index: 75;
+      pointer-events:none;
+      display:flex;
+      justify-content:center;
+      align-items:flex-end;
+    }
+    .nearPanel{
+      pointer-events:auto;
+      width: min(780px, 100%);
+      border-radius: 22px;
+      background: rgba(14,23,48,.86);
+      border:1px solid rgba(255,255,255,.06);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+      transform: translateY(calc(100% - 56px)); /* peek */
+      transition: transform .18s ease;
+      touch-action: pan-y;
+    }
+    .nearPanel.open{ transform: translateY(0%); }
+    .nearHead{
+      padding: 8px 12px 10px 12px;
+      display:flex; flex-direction:column; gap:8px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      background: rgba(14,23,48,.62);
+    }
+    .grab{
+      width: 52px; height: 5px;
+      border-radius: 999px;
+      background: rgba(234,240,255,.18);
+      margin: 4px auto 0 auto;
+    }
+    .nearTopRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .nearTitle{
+      display:flex; flex-direction:column; gap:1px;
+      min-width:0;
+    }
+    .nearTitle strong{ font-size:14px; font-weight:900; }
+    .nearTitle small{ font-size:12px; color:rgba(234,240,255,.72); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .nearBody{
+      padding: 10px;
+      display:flex; flex-direction:column; gap:10px;
+      max-height: 44vh;
+      overflow:auto;
+    }
+    .nearControls{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+    }
+    .select{
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.06);
@@ -413,26 +423,83 @@
       padding: 10px 12px;
       outline: none;
       font-size: 13px;
+      min-width: 160px;
     }
-    .hint{
-      font-size: 12px;
-      color: rgba(234,240,255,.68);
-      line-height: 1.35;
+    .hint{ font-size:12px; color:rgba(234,240,255,.68); line-height:1.35; }
+
+    /* Drawer (settings simplified) */
+    .overlay{
+      position:absolute; inset:0;
+      z-index: 90;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(3px);
+      display:none;
     }
+    .overlay.show{ display:block; }
+    .drawer{
+      position:absolute;
+      top:0; bottom:0; left:0;
+      width: min(360px, 86vw);
+      z-index: 95;
+      background: linear-gradient(180deg, rgba(14,23,48,.98), rgba(11,18,32,.98));
+      border-right: 1px solid rgba(255,255,255,.06);
+      box-shadow: 20px 0 40px rgba(0,0,0,.38);
+      transform: translateX(-102%);
+      transition: transform .22s ease;
+      padding: calc(12px + var(--safeTop)) 12px calc(12px + var(--safeBottom)) 12px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .drawer.show{ transform: translateX(0); }
+    .section{
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+    .secHead{
+      padding: 12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .secHead strong{ font-size:13px; }
+    .secBody{ padding: 12px; display:flex; flex-direction:column; gap:10px; }
+    .toggleRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .toggleRow label{ font-size:13px; color: rgba(234,240,255,.9); }
+    .switch{
+      width:48px; height:28px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      position:relative;
+      cursor:pointer;
+      user-select:none;
+    }
+    .switch::after{
+      content:"";
+      width:22px; height:22px;
+      border-radius:999px;
+      position:absolute;
+      top:2px; left:2px;
+      background: rgba(234,240,255,.92);
+      transition: left .16s ease;
+      box-shadow: 0 8px 14px rgba(0,0,0,.25);
+    }
+    .switch.on{
+      background: rgba(78,161,255,.22);
+      border-color: rgba(78,161,255,.35);
+    }
+    .switch.on::after{ left:24px; }
 
     .btn{
-      width: 100%;
-      border: 1px solid rgba(255,255,255,.08);
+      width:100%;
+      border:1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.06);
       color: var(--text);
       padding: 10px 12px;
       border-radius: 14px;
-      cursor: pointer;
+      cursor:pointer;
       font-size: 13px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
       -webkit-tap-highlight-color: transparent;
     }
     .btn.primary{
@@ -443,43 +510,41 @@
       background: rgba(255,92,122,.14);
       border-color: rgba(255,92,122,.30);
     }
-    .btn:active{ transform: scale(.99); }
 
     /* Toast */
     .toast{
-      position: absolute;
+      position:absolute;
       left: calc(10px + var(--safeLeft));
       right: calc(10px + var(--safeRight));
-      bottom: calc(10px + var(--safeBottom) + var(--dockH) + 10px);
-      z-index: 60;
-
-      display: none;
-      justify-content: center;
-      pointer-events: none;
+      bottom: calc(10px + var(--safeBottom) + var(--dockH) + 10px + 52px);
+      z-index: 110;
+      display:none;
+      justify-content:center;
+      pointer-events:none;
     }
-    .toast.show{ display: flex; }
+    .toast.show{ display:flex; }
     .toastInner{
-      width: min(520px, 100%);
+      width: min(640px, 100%);
       border-radius: 16px;
       padding: 10px 12px;
       border: 1px solid rgba(255,255,255,.08);
-      background: rgba(14,23,48,.86);
+      background: rgba(14,23,48,.88);
       backdrop-filter: blur(10px);
       box-shadow: var(--shadow2);
       color: rgba(234,240,255,.95);
       font-size: 13px;
-      pointer-events: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      pointer-events:auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
     }
 
     /* Loading overlay */
     .loading {
       position: absolute;
       inset: 0;
-      z-index: 80;
+      z-index: 130;
       background: radial-gradient(1200px 700px at 30% 10%, rgba(78,161,255,.12), transparent 60%),
                   radial-gradient(900px 600px at 80% 20%, rgba(124,92,255,.12), transparent 55%),
                   linear-gradient(180deg, rgba(11,18,32,1), rgba(11,18,32,1));
@@ -499,31 +564,6 @@
       flex-direction: column;
       gap: 14px;
     }
-    .loadingTop{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .logo{
-      width: 44px; height: 44px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: linear-gradient(135deg, rgba(78,161,255,.30), rgba(124,92,255,.18));
-      display: grid;
-      place-items: center;
-      box-shadow: 0 10px 20px rgba(0,0,0,.25);
-    }
-    .logo svg{ width: 22px; height: 22px; }
-    .loadingTitle{
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      min-width: 0;
-    }
-    .loadingTitle strong{ font-size: 15px; }
-    .loadingTitle small{ color: rgba(234,240,255,.72); font-size: 12px; }
-
     .bar{
       width: 100%;
       height: 10px;
@@ -540,1295 +580,1594 @@
       transition: width .25s ease;
     }
 
-    /* Leaflet control resets */
-    .leaflet-control-container{ pointer-events: none; } /* We'll re-enable specific custom controls */
-    .leaflet-control { pointer-events: auto; }
-    .leaflet-top, .leaflet-bottom{ z-index: 10; }
-
-    /* Hide default zoom controls */
+    /* Leaflet resets */
     .leaflet-control-zoom { display:none; }
+    .leaflet-routing-container{ display:none !important; }
 
-    /* Custom zoom (bottom-center horizontal) */
-    .zoomBarWrap{
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(10px + var(--safeBottom) + var(--dockH) + 12px);
-      z-index: 28;
-      pointer-events: none;
-    }
-    .zoomBar{
-      pointer-events: auto;
-      display: flex;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.06);
-      background: rgba(14,23,48,.72);
-      backdrop-filter: blur(10px);
-      box-shadow: var(--shadow2);
-    }
-    .zoomBtn{
-      width: 44px; height: 44px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .zoomBtn:active{ transform: scale(.99); }
-
-    /* Make routing machine UI invisible (we provide our own) */
-    .leaflet-routing-container { display: none !important; }
-
-    /* Desktop refinements */
-    @media (min-width: 820px){
-      :root{ --dockH: 76px; --appbarH: 64px; }
-      .sheet{
-        justify-content: flex-start;
-      }
-      .panel{
-        width: 520px;
-      }
+    @media (min-width: 900px){
+      .panel{ width: 520px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <div id="map" aria-label="Map"></div>
+<div class="app">
+  <div id="map" aria-label="Map"></div>
 
-    <!-- Custom zoom bar -->
-    <div class="zoomBarWrap" aria-hidden="false">
-      <div class="zoomBar" role="group" aria-label="Zoom controls">
-        <div class="zoomBtn" id="zoomOut" title="Zoom out" aria-label="Zoom out">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <!-- Custom zoom -->
+  <div class="zoomBarWrap">
+    <div class="zoomBar" role="group" aria-label="Zoom controls">
+      <div class="zoomBtn" id="zoomOut" title="Zoom out" aria-label="Zoom out">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="zoomBtn" id="zoomIn" title="Zoom in" aria-label="Zoom in">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="appbar">
+    <button class="iconbtn" id="btnMenu" aria-label="Open menu" title="Menu">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="brand">
+      <div class="t1">ATHENS NAV</div>
+      <div class="t2">CPYA • v1.2</div>
+    </div>
+
+    <div class="search" role="search">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style="width:18px;height:18px;opacity:.85;">
+        <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="q" autocomplete="off" inputmode="search" placeholder="Search in Athens (e.g., Acropolis, Syntagma, 'where is X')"/>
+    </div>
+
+    <button class="iconbtn" id="btnGo" aria-label="Search" title="Search">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="pill" title="Athens-only mode">
+      <span class="dot"></span> Athens
+    </div>
+  </header>
+
+  <!-- Widgets -->
+  <div class="widgets">
+    <div class="widget wSmall" aria-label="Time">
+      <div class="widgetRow">
+        <div>
+          <div class="widgetTitle">Time</div>
+          <div class="widgetValue" id="timeVal">--:--</div>
         </div>
-        <div class="zoomBtn" id="zoomIn" title="Zoom in" aria-label="Zoom in">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
+        <div style="font-size:12px;color:rgba(234,240,255,.7);" id="dateVal">---</div>
       </div>
     </div>
 
-    <!-- Top app bar -->
-    <header class="appbar" role="banner">
-      <button class="iconbtn" id="btnMenu" aria-label="Open menu" title="Menu">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-
-      <div class="brand" aria-label="App title">
-        <div class="t1">ATHENS NAV</div>
-        <div class="t2">CPYA • v1.2</div>
-      </div>
-
-      <div class="search" role="search">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style="width:18px;height:18px;opacity:.85;">
-          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <input id="q" autocomplete="off" inputmode="search" placeholder="Search in Athens (e.g., Acropolis, Syntagma, 'where is X')" />
-      </div>
-
-      <button class="iconbtn" id="btnGo" aria-label="Search" title="Search">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M5 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-
-      <div class="pill" title="Athens-only mode">
-        <span class="dot" aria-hidden="true"></span>
-        Athens
-      </div>
-    </header>
-
-    <!-- Results / directions panel -->
-    <div class="sheet" aria-hidden="false">
-      <section class="panel" id="panel" aria-label="Results panel">
-        <div class="panelHeader">
-          <div class="title">
-            <strong id="panelTitle">Ready</strong>
-            <small id="panelSubtitle">Search for a place, then tap “Route”.</small>
-          </div>
-          <button class="iconbtn" id="btnClosePanel" aria-label="Close panel" title="Close">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
+    <div class="widget wSmall" aria-label="Weather">
+      <div class="widgetRow">
+        <div>
+          <div class="widgetTitle">Weather</div>
+          <div class="widgetValue" id="weatherVal">--</div>
         </div>
-        <div class="panelBody">
-          <div class="list" id="panelList"></div>
-        </div>
-      </section>
+        <div class="weatherIcon" id="weatherIcon" title="Weather icon" aria-hidden="true"></div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:rgba(234,240,255,.70);" id="weatherSub">Athens</div>
     </div>
 
-    <!-- Bottom dock -->
-    <nav class="dock" role="navigation" aria-label="Bottom actions">
-      <button class="dockbtn active" id="dockSearch" aria-label="Search tab">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span>Search</span>
-      </button>
-
-      <button class="dockbtn" id="dockRoute" aria-label="Route tab">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M7 17c2.5 0 2.5-6 5-6s2.5 6 5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M7 17a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M17 17a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 11a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        <span>Route</span>
-      </button>
-
-      <button class="dockbtn" id="dockLocate" aria-label="My location">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        <span>Locate</span>
-      </button>
-
-      <button class="dockbtn" id="dockClear" aria-label="Clear map">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M7 7h10M9 7V5h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M8 7l1 14h6l1-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Clear</span>
-      </button>
-    </nav>
-
-    <!-- Menu overlay + drawer -->
-    <div class="overlay" id="overlay"></div>
-
-    <aside class="drawer" id="drawer" aria-label="Menu">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          <strong style="font-size:14px;">Settings</strong>
-          <span style="font-size:12px;color:rgba(234,240,255,.7);">Athens-only navigation</span>
+    <div class="widget compassWrap" aria-label="Compass">
+      <div class="compassBox">
+        <div class="compass" title="Compass">
+          <div class="n">N</div>
+          <div class="needle" id="needle"></div>
         </div>
-        <button class="iconbtn" id="btnCloseDrawer" aria-label="Close menu" title="Close">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="section">
-        <div class="secHead">
-          <strong>Routing</strong>
-          <span style="font-size:12px;color:rgba(234,240,255,.65);">OSRM</span>
-        </div>
-        <div class="secBody">
-          <div class="toggleRow">
-            <label for="modeSelect">Mode</label>
-          </div>
-          <select class="select" id="modeSelect" aria-label="Routing mode">
-            <option value="driving" selected>Driving</option>
-            <option value="foot">Walking</option>
-            <option value="bike">Cycling</option>
-          </select>
-          <div class="hint">
-            “Driving vs Walking” accuracy is controlled here. If you route and it looks wrong, swap mode.
-          </div>
-
-          <div class="toggleRow">
-            <label>Auto-fit route</label>
-            <div class="switch on" id="swFit" role="switch" aria-checked="true" tabindex="0"></div>
-          </div>
-
-          <div class="toggleRow">
-            <label>Show turn steps</label>
-            <div class="switch on" id="swSteps" role="switch" aria-checked="true" tabindex="0"></div>
-          </div>
-
-          <button class="btn primary" id="btnReRoute">
-            <svg viewBox="0 0 24 24" fill="none" style="width:18px;height:18px;">
-              <path d="M4 12a8 8 0 0 1 13.657-5.657L20 8.686V4h-4.686l2.343 2.343A6 6 0 1 0 18 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Recalculate route
-          </button>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="secHead">
-          <strong>Search</strong>
-          <span style="font-size:12px;color:rgba(234,240,255,.65);">CPYA → Nominatim</span>
-        </div>
-        <div class="secBody">
-          <div class="toggleRow">
-            <label>Prefer CPYA backend</label>
-            <div class="switch on" id="swCPYA" role="switch" aria-checked="true" tabindex="0"></div>
-          </div>
-          <div class="hint">
-            If your server endpoint exists, we use it first (fast + “where is X”). Otherwise we fall back to OSM Nominatim.
-          </div>
-
-          <input class="textField" id="cpyaEndpoint" placeholder="CPYA endpoint (optional) e.g. /api/where" />
-          <div class="hint">Leave empty to auto-try common paths on your server.</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="secHead">
-          <strong>Map</strong>
-          <span style="font-size:12px;color:rgba(234,240,255,.65);">Athens bounds</span>
-        </div>
-        <div class="secBody">
-          <div class="toggleRow">
-            <label>Soft Athens bounds</label>
-            <div class="switch on" id="swBounds" role="switch" aria-checked="true" tabindex="0"></div>
-          </div>
-          <div class="hint">
-            Soft bounds keep you around Athens but allow Piraeus + nearby areas (no “too restrictive” maxBounds trap).
-          </div>
-          <button class="btn" id="btnRecenter">Recenter Athens</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="secHead">
-          <strong>Maintenance</strong>
-          <span style="font-size:12px;color:rgba(234,240,255,.65);">Utilities</span>
-        </div>
-        <div class="secBody">
-          <button class="btn danger" id="btnHardReset">Clear everything</button>
-          <div class="hint">
-            Removes markers, routes, and closes panels. Does not clear browser storage.
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:auto;color:rgba(234,240,255,.55);font-size:12px;line-height:1.35;">
-        Tip: tap a result → “Route”. Long-press map (desktop: right click) to set destination pin.
-      </div>
-    </aside>
-
-    <!-- Toast -->
-    <div class="toast" id="toast" aria-live="polite" aria-atomic="true">
-      <div class="toastInner">
-        <div id="toastMsg">Ready.</div>
-        <button class="iconbtn" id="toastClose" aria-label="Dismiss">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading screen -->
-    <div class="loading" id="loading">
-      <div class="loadingCard">
-        <div class="loadingTop">
-          <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-            <div class="logo" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 22s7-4.5 7-12a7 7 0 1 0-14 0c0 7.5 7 12 7 12Z" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="loadingTitle">
-              <strong>ATHENS NAV</strong>
-              <small>Initializing map + routing…</small>
-            </div>
-          </div>
-          <span style="font-size:12px;color:rgba(234,240,255,.68);">v1.2</span>
-        </div>
-        <div class="bar" aria-hidden="true"><div id="loadBar"></div></div>
-        <div style="font-size:12px;color:rgba(234,240,255,.70);line-height:1.35;">
-          Mobile-first • no overlaps • bottom-center zoom • Athens bounds include Piraeus.
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="font-size:12px;color:rgba(234,240,255,.70);" id="headingTxt">--°</div>
+          <button class="miniBtn primary" id="btnCompass">Enable</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+  <!-- Main Panel -->
+  <div class="sheet">
+    <section class="panel show" id="panel" aria-label="Panel">
+      <div class="panelHeader">
+        <div class="title">
+          <strong id="panelTitle">Ready</strong>
+          <small id="panelSubtitle">Tap map to drop a pin. Or search. Then Route.</small>
+        </div>
+        <button class="iconbtn" id="btnClosePanel" aria-label="Close panel" title="Close">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="panelBody">
+        <div class="list" id="panelList"></div>
+      </div>
+    </section>
+  </div>
 
-  <script>
-    // =========================
-    // ATHENS NAV • V1.2 FULL REBUILD
-    // Stable, mobile-first, no overlaps, bottom-center horizontal zoom, soft Athens bounds
-    // =========================
+  <!-- Near Me sliding tab -->
+  <div class="nearSheet">
+    <section class="nearPanel" id="nearPanel" aria-label="Near me">
+      <div class="nearHead" id="nearHandle">
+        <div class="grab"></div>
+        <div class="nearTopRow">
+          <div class="nearTitle">
+            <strong>Near Me</strong>
+            <small id="nearSub">Tap to open • Slide down to close</small>
+          </div>
+          <button class="iconbtn" id="nearClose" aria-label="Close near me" title="Close">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="nearBody">
+        <div class="nearControls">
+          <select class="select" id="nearType" aria-label="Category">
+            <option value="pharmacy">Pharmacies</option>
+            <option value="atm">ATMs</option>
+            <option value="supermarket">Supermarkets</option>
+            <option value="cafe">Cafes</option>
+            <option value="restaurant">Restaurants</option>
+            <option value="fuel">Gas stations</option>
+            <option value="hospital">Hospitals</option>
+            <option value="police">Police</option>
+            <option value="parking">Parking</option>
+          </select>
 
-    // --- Athens "soft" region (includes Piraeus and nearby)
-    // Rough bbox: [S,W] [N,E]
-    const ATHENS_BBOX = {
-      south: 37.80,
-      west: 23.55,
-      north: 38.12,
-      east: 23.98
+          <select class="select" id="nearRadius" aria-label="Radius">
+            <option value="400">400 m</option>
+            <option value="800" selected>800 m</option>
+            <option value="1500">1.5 km</option>
+            <option value="2500">2.5 km</option>
+          </select>
+
+          <button class="miniBtn primary" id="nearGo">Scan</button>
+        </div>
+
+        <div class="hint">Uses your location. Tap a result to set destination pin → Route.</div>
+
+        <div class="list" id="nearList"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bottom Dock -->
+  <nav class="dock" role="navigation" aria-label="Bottom actions">
+    <button class="dockbtn active" id="dockSearch" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Search</span>
+    </button>
+
+    <button class="dockbtn" id="dockRoute" aria-label="Route">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 17c2.5 0 2.5-6 5-6s2.5 6 5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7 17a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M17 17a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 11a2 2 0 1 0 0.001 0Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Route</span>
+    </button>
+
+    <button class="dockbtn" id="dockNear" aria-label="Near me">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Near</span>
+    </button>
+
+    <button class="dockbtn" id="dockLocate" aria-label="Locate">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Locate</span>
+    </button>
+
+    <button class="dockbtn" id="dockClear" aria-label="Clear">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 7h10M9 7V5h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 7l1 14h6l1-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Clear</span>
+    </button>
+  </nav>
+
+  <!-- Drawer -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="drawer" aria-label="Menu">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+        <strong style="font-size:14px;">Settings</strong>
+        <span style="font-size:12px;color:rgba(234,240,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          Athens-only • clean controls
+        </span>
+      </div>
+      <button class="iconbtn" id="btnCloseDrawer" aria-label="Close menu" title="Close">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="secHead"><strong>Routing mode</strong><span style="font-size:12px;color:rgba(234,240,255,.65);">OSRM</span></div>
+      <div class="secBody">
+        <select class="select" id="modeSelect" aria-label="Routing mode">
+          <option value="driving" selected>Driving</option>
+          <option value="walking">Walking</option>
+          <option value="cycling">Cycling</option>
+        </select>
+        <div class="hint">Driving/Walking/Cycling use different routers (times will differ).</div>
+
+        <div class="toggleRow">
+          <label>Auto-fit route</label>
+          <div class="switch on" id="swFit" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+
+        <div class="toggleRow">
+          <label>Show turn steps</label>
+          <div class="switch on" id="swSteps" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+
+        <button class="btn primary" id="btnReRoute">Recalculate route</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="secHead"><strong>Search provider</strong><span style="font-size:12px;color:rgba(234,240,255,.65);">CPYA → OSM</span></div>
+      <div class="secBody">
+        <div class="toggleRow">
+          <label>Prefer CPYA backend</label>
+          <div class="switch on" id="swCPYA" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+        <input class="select" id="cpyaEndpoint" placeholder="Optional endpoint e.g. /api/where" />
+        <div class="hint">If empty: tries /api/where → /where → /search. Falls back to Nominatim.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="secHead"><strong>Athens lock</strong><span style="font-size:12px;color:rgba(234,240,255,.65);">Hard bounds</span></div>
+      <div class="secBody">
+        <div class="toggleRow">
+          <label>Strict Athens-only</label>
+          <div class="switch on" id="swLock" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+        <div class="hint">Prevents panning/zooming out of Athens area.</div>
+        <button class="btn" id="btnRecenter">Recenter Athens</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="secHead"><strong>Maintenance</strong><span style="font-size:12px;color:rgba(234,240,255,.65);">Reset</span></div>
+      <div class="secBody">
+        <button class="btn danger" id="btnHardReset">Clear everything</button>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;color:rgba(234,240,255,.55);font-size:12px;line-height:1.35;">
+      Map actions: <b>Tap</b> to drop destination pin. Drag to pan. Use Near Me (slide).
+    </div>
+  </aside>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true">
+    <div class="toastInner">
+      <div id="toastMsg">Ready.</div>
+      <button class="iconbtn" id="toastClose" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loadingCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <strong style="font-size:15px;">ATHENS NAV</strong>
+          <small style="color:rgba(234,240,255,.70);font-size:12px;">Loading map + widgets…</small>
+        </div>
+        <span style="font-size:12px;color:rgba(234,240,255,.68);">v1.2</span>
+      </div>
+      <div class="bar"><div id="loadBar"></div></div>
+      <div style="font-size:12px;color:rgba(234,240,255,.70);line-height:1.35;">
+        Athens-only • Tap to pin • Slide Near Me • Turn icons back
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+<script>
+  // =========================
+  // ATHENS NAV • V1.2 (Rewritten)
+  // Requirements:
+  // - Athens-only strict lock (no zooming out of Athens)
+  // - Tap / left click drops destination pin (desktop + mobile)
+  // - Near Me bottom sheet (tap + slide)
+  // - Compass + Time + Weather (icons)
+  // - Walking/Driving/Cycling different times
+  // - Turn-by-turn arrows/icons
+  // =========================
+
+  const $ = (id) => document.getElementById(id);
+
+  // Athens bbox (includes Piraeus + nearby, but still "Athens-only")
+  const ATHENS_BBOX = {
+    south: 37.82,
+    west: 23.57,
+    north: 38.10,
+    east: 23.97
+  };
+  const ATHENS_CENTER = [37.9756, 23.7347];
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function inBbox(lat, lon, b){
+    return lat >= b.south && lat <= b.north && lon >= b.west && lon <= b.east;
+  }
+  function formatDist(m){
+    if (m == null || !isFinite(m)) return "";
+    if (m < 1000) return `${Math.round(m)} m`;
+    const km = m / 1000;
+    return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+  }
+  function formatTime(s){
+    if (s == null || !isFinite(s)) return "";
+    s = Math.max(0, Math.round(s));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (h <= 0) return `${m} min`;
+    return `${h} h ${m} min`;
+  }
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // Toast
+  let toastTimer = null;
+  function toast(msg, ms=2200){
+    $("toastMsg").textContent = msg;
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), ms);
+  }
+  $("toastClose").addEventListener("click", () => $("toast").classList.remove("show"));
+
+  // Loading bar
+  function setLoad(p){ $("loadBar").style.width = clamp(p,0,100) + "%"; }
+  setLoad(15);
+
+  // Drawer
+  function openDrawer(){ $("overlay").classList.add("show"); $("drawer").classList.add("show"); }
+  function closeDrawer(){ $("overlay").classList.remove("show"); $("drawer").classList.remove("show"); }
+  $("btnMenu").addEventListener("click", openDrawer);
+  $("btnCloseDrawer").addEventListener("click", closeDrawer);
+  $("overlay").addEventListener("click", closeDrawer);
+
+  // Switch helper
+  function setSwitch(el,on){
+    el.classList.toggle("on", !!on);
+    el.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  function getSwitch(el){ return el.classList.contains("on"); }
+  function bindSwitch(el, initial, onChange){
+    setSwitch(el, initial);
+    const toggle = () => {
+      const next = !getSwitch(el);
+      setSwitch(el, next);
+      onChange?.(next);
     };
-
-    // Center near Syntagma
-    const ATHENS_CENTER = [37.9756, 23.7347];
-
-    // Utilities
-    const $ = (id) => document.getElementById(id);
-
-    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
-
-    function inBbox(lat, lon, bbox){
-      return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
-    }
-
-    function formatDist(m){
-      if (m == null || !isFinite(m)) return "";
-      if (m < 1000) return `${Math.round(m)} m`;
-      const km = m / 1000;
-      return `${km.toFixed(km < 10 ? 1 : 0)} km`;
-    }
-
-    function formatTime(s){
-      if (s == null || !isFinite(s)) return "";
-      s = Math.max(0, Math.round(s));
-      const h = Math.floor(s / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      if (h <= 0) return `${m} min`;
-      return `${h} h ${m} min`;
-    }
-
-    // Toast
-    let toastTimer = null;
-    function toast(msg, ms=2200){
-      const t = $("toast");
-      $("toastMsg").textContent = msg;
-      t.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => t.classList.remove("show"), ms);
-    }
-    $("toastClose").addEventListener("click", () => $("toast").classList.remove("show"));
-
-    // Drawer / overlay
-    function openDrawer(){
-      $("overlay").classList.add("show");
-      $("drawer").classList.add("show");
-    }
-    function closeDrawer(){
-      $("overlay").classList.remove("show");
-      $("drawer").classList.remove("show");
-    }
-    $("btnMenu").addEventListener("click", openDrawer);
-    $("btnCloseDrawer").addEventListener("click", closeDrawer);
-    $("overlay").addEventListener("click", closeDrawer);
-
-    // Switch helpers
-    function setSwitch(el, on){
-      el.classList.toggle("on", !!on);
-      el.setAttribute("aria-checked", !!on ? "true" : "false");
-    }
-    function getSwitch(el){ return el.classList.contains("on"); }
-    function bindSwitch(el, initial, onChange){
-      setSwitch(el, initial);
-      const toggle = () => {
-        const next = !getSwitch(el);
-        setSwitch(el, next);
-        onChange?.(next);
-      };
-      el.addEventListener("click", toggle);
-      el.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
-      });
-    }
-
-    // Loading progress
-    function setLoad(p){
-      $("loadBar").style.width = clamp(p,0,100) + "%";
-    }
-    setLoad(20);
-
-    // -------------------------
-    // Map init
-    // -------------------------
-    const map = L.map("map", {
-      zoomControl: false,
-      preferCanvas: true,
-      zoomSnap: 0.5,
-      zoomDelta: 0.5
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
     });
+  }
 
-    // Tiles
-    const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(map);
+  // Panel helpers
+  function showPanel(title, subtitle){
+    $("panelTitle").textContent = title;
+    $("panelSubtitle").textContent = subtitle || "";
+    $("panel").classList.add("show");
+  }
+  function hidePanel(){ $("panel").classList.remove("show"); }
+  $("btnClosePanel").addEventListener("click", hidePanel);
 
-    setLoad(45);
+  function clearPanelList(){ $("panelList").innerHTML = ""; }
+  function addPanelCard(node){ $("panelList").appendChild(node); }
+  function makeInfoCard(title, body){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="name">${escapeHtml(title)}</div><div class="addr">${escapeHtml(body)}</div>`;
+    return card;
+  }
 
-    // Soft bounds option
-    let softBoundsEnabled = true;
-    function applyBounds(){
-      if (!softBoundsEnabled){
-        map.setMaxBounds(null);
-        return;
+  function setDockActive(id){
+    ["dockSearch","dockRoute","dockNear","dockLocate","dockClear"].forEach(x => $(x).classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  // -------------------------
+  // Map init (Athens-only)
+  // -------------------------
+  const map = L.map("map", {
+    zoomControl: false,
+    preferCanvas: true,
+    zoomSnap: 0.5,
+    zoomDelta: 0.5,
+    minZoom: 11.5,      // prevents zooming out to "Greece/world"
+    maxZoom: 19
+  });
+
+  const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+
+  setLoad(40);
+
+  const hardBounds = L.latLngBounds(
+    L.latLng(ATHENS_BBOX.south, ATHENS_BBOX.west),
+    L.latLng(ATHENS_BBOX.north, ATHENS_BBOX.east)
+  );
+
+  let athensLock = true;
+
+  function applyAthensLock(){
+    if (athensLock){
+      map.setMaxBounds(hardBounds);
+      map.options.maxBoundsViscosity = 1.0; // hard
+      if (!hardBounds.contains(map.getCenter())){
+        map.panInsideBounds(hardBounds, { animate:true });
       }
-      const bounds = L.latLngBounds(
-        L.latLng(ATHENS_BBOX.south, ATHENS_BBOX.west),
-        L.latLng(ATHENS_BBOX.north, ATHENS_BBOX.east)
-      );
-
-      // "Viscosity" keeps you near Athens without trapping you in a tiny rectangle
-      map.setMaxBounds(bounds);
-      map.options.maxBoundsViscosity = 0.25; // soft
+      // keep zoom from going too low
+      if (map.getZoom() < map.options.minZoom) map.setZoom(map.options.minZoom);
+    } else {
+      map.setMaxBounds(null);
+      map.options.maxBoundsViscosity = 0.0;
     }
+  }
 
-    map.setView(ATHENS_CENTER, 12.5);
-    applyBounds();
+  map.setView(ATHENS_CENTER, 12.6);
+  applyAthensLock();
 
-    // Custom zoom controls
-    $("zoomIn").addEventListener("click", () => map.zoomIn());
-    $("zoomOut").addEventListener("click", () => map.zoomOut());
-
-    // Long-press / right click to set destination
-    // Leaflet "contextmenu" works on desktop right-click and long-press on mobile.
-    let destPin = null;
-    map.on("contextmenu", (e) => {
-      const { lat, lng } = e.latlng;
-      if (softBoundsEnabled && !inBbox(lat, lng, ATHENS_BBOX)){
-        toast("Destination is outside Athens bounds.");
-        return;
-      }
-      setDestination([lat, lng], "Dropped pin");
-      toast("Destination set (pin).");
-      showPanel("Destination", "Tap Route to navigate.");
-    });
-
-    // -------------------------
-    // State
-    // -------------------------
-    let userMarker = null;
-    let userLatLng = null;
-
-    let searchMarkers = [];
-    let lastResults = [];
-    let selectedResult = null; // {name, lat, lon, display}
-
-    let routingControl = null;
-    let routingLine = null;
-    let lastRouteSummary = null;
-
-    let routeMode = "driving"; // driving | foot | bike
-    let autoFit = true;
-    let showSteps = true;
-
-    // Panel helpers
-    function showPanel(title, subtitle){
-      $("panelTitle").textContent = title;
-      $("panelSubtitle").textContent = subtitle || "";
-      $("panel").classList.add("show");
+  // Enforce lock on moveend/zoomend
+  map.on("moveend zoomend", () => {
+    if (!athensLock) return;
+    if (!hardBounds.contains(map.getCenter())){
+      map.panInsideBounds(hardBounds, { animate:true });
+      toast("Athens-only lock.");
     }
-    function hidePanel(){ $("panel").classList.remove("show"); }
-    $("btnClosePanel").addEventListener("click", hidePanel);
-
-    function clearPanelList(){
-      $("panelList").innerHTML = "";
+    if (map.getZoom() < map.options.minZoom){
+      map.setZoom(map.options.minZoom);
     }
-    function addPanelCard(node){
-      $("panelList").appendChild(node);
+  });
+
+  // Zoom buttons
+  $("zoomIn").addEventListener("click", () => map.zoomIn());
+  $("zoomOut").addEventListener("click", () => map.zoomOut());
+
+  setLoad(55);
+
+  // -------------------------
+  // State: markers & routing
+  // -------------------------
+  let userLatLng = null;
+  let userMarker = null;
+
+  let destMarker = null;
+  let selectedResult = null;
+
+  let searchMarkers = [];
+  let routingControl = null;
+  let routingLine = null;
+
+  let routeMode = "driving"; // driving | walking | cycling
+  let autoFit = true;
+  let showSteps = true;
+
+  function clearSearchMarkers(){
+    for (const m of searchMarkers) map.removeLayer(m);
+    searchMarkers = [];
+    selectedResult = null;
+  }
+
+  function clearDestination(){
+    if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
+  }
+
+  function clearRoute(){
+    if (routingControl){
+      try { map.removeControl(routingControl); } catch {}
+      routingControl = null;
     }
-
-    // Dock active state
-    function setDockActive(id){
-      ["dockSearch","dockRoute","dockLocate","dockClear"].forEach(x => $(x).classList.remove("active"));
-      $(id).classList.add("active");
+    if (routingLine){
+      try { map.removeLayer(routingLine); } catch {}
+      routingLine = null;
     }
+  }
 
-    // -------------------------
-    // Markers & clearing
-    // -------------------------
-    function clearSearchMarkers(){
-      for (const m of searchMarkers) map.removeLayer(m);
-      searchMarkers = [];
-      lastResults = [];
-      selectedResult = null;
+  function hardReset(){
+    clearRoute();
+    clearSearchMarkers();
+    clearDestination();
+    clearPanelList();
+    showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
+    addPanelCard(makeInfoCard("Tip", "Desktop: left click. Mobile: tap. Near Me: slide tab."));
+    toast("Cleared.");
+  }
+
+  $("dockClear").addEventListener("click", () => { setDockActive("dockClear"); hardReset(); setDockActive("dockSearch"); });
+  $("btnHardReset").addEventListener("click", () => { hardReset(); closeDrawer(); });
+
+  // -------------------------
+  // Destination: Tap / left click
+  // -------------------------
+  function setDestination(lat, lon, name="Dropped pin"){
+    if (athensLock && !inBbox(lat, lon, ATHENS_BBOX)){
+      toast("Outside Athens lock.");
+      return;
     }
+    selectedResult = { name, lat, lon, display: name };
 
-    function clearRoute(){
-      if (routingControl){
-        try { map.removeControl(routingControl); } catch {}
-        routingControl = null;
-      }
-      if (routingLine){
-        try { map.removeLayer(routingLine); } catch {}
-        routingLine = null;
-      }
-      lastRouteSummary = null;
+    clearDestination();
+    destMarker = L.marker([lat, lon], { title: name }).addTo(map).bindPopup(`<b>${escapeHtml(name)}</b>`);
+    destMarker.openPopup();
+
+    showPanel("Destination set", `${lat.toFixed(6)}, ${lon.toFixed(6)} • Tap Route`);
+    renderSelectedCard(selectedResult);
+
+    if (autoFit){
+      const b = L.latLngBounds([[lat, lon]]);
+      if (userLatLng) b.extend(userLatLng);
+      map.fitBounds(b.pad(0.22), { animate:true });
+    } else {
+      map.panTo([lat, lon], { animate:true });
     }
+  }
 
-    function clearDestinationPin(){
-      if (destPin){ map.removeLayer(destPin); destPin = null; }
+  // Prevent accidental pin drops during drags
+  let dragging = false;
+  map.on("dragstart", () => dragging = true);
+  map.on("dragend", () => setTimeout(() => dragging = false, 60));
+
+  // Desktop + mobile: normal click/tap drops pin
+  map.on("click", (e) => {
+    if (dragging) return;
+    // If user tapped on an existing marker popup, Leaflet will still emit click sometimes.
+    // We accept it; it matches your "tap to pin" goal.
+    setDestination(e.latlng.lat, e.latlng.lng, "Dropped pin");
+  });
+
+  // Long-press mobile support (extra reliability)
+  let pressTimer = null;
+  const mapEl = $("map");
+  mapEl.addEventListener("touchstart", (ev) => {
+    if (ev.touches.length !== 1) return;
+    const t = ev.touches[0];
+    const startX = t.clientX, startY = t.clientY;
+    pressTimer = setTimeout(() => {
+      const pt = map.mouseEventToLatLng({ clientX: startX, clientY: startY });
+      setDestination(pt.lat, pt.lng, "Dropped pin");
+      toast("Pin dropped.");
+    }, 520);
+  }, { passive:true });
+
+  mapEl.addEventListener("touchmove", () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }, { passive:true });
+  mapEl.addEventListener("touchend", () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }, { passive:true });
+
+  // -------------------------
+  // Locate
+  // -------------------------
+  function locate(){
+    setDockActive("dockLocate");
+    if (!navigator.geolocation){
+      toast("Geolocation not supported.");
+      setDockActive("dockSearch");
+      return;
     }
+    toast("Locating…", 1400);
 
-    function hardReset(){
-      clearSearchMarkers();
-      clearRoute();
-      clearDestinationPin();
-      hidePanel();
-      toast("Cleared.");
-    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        userLatLng = L.latLng(lat, lon);
 
-    $("dockClear").addEventListener("click", () => { setDockActive("dockClear"); hardReset(); setDockActive("dockSearch"); });
+        if (athensLock && !hardBounds.contains(userLatLng)){
+          toast("Your GPS is outside Athens lock.");
+        }
 
-    $("btnHardReset").addEventListener("click", () => {
-      hardReset();
-      closeDrawer();
-    });
+        if (!userMarker){
+          userMarker = L.circleMarker(userLatLng, {
+            radius: 8,
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+          }).addTo(map);
+        } else {
+          userMarker.setLatLng(userLatLng);
+        }
 
-    // -------------------------
-    // Location
-    // -------------------------
-    async function locate(){
-      setDockActive("dockLocate");
+        // Keep within Athens lock
+        if (athensLock){
+          map.panInsideBounds(hardBounds, { animate:true });
+          map.setView(userLatLng, Math.max(map.getZoom(), 14), { animate:true });
+        } else {
+          map.setView(userLatLng, Math.max(map.getZoom(), 14), { animate:true });
+        }
 
-      if (!navigator.geolocation){
-        toast("Geolocation not supported.");
+        toast("Location updated.");
         setDockActive("dockSearch");
-        return;
-      }
+      },
+      () => {
+        toast("Location failed. Enable permission/GPS.");
+        setDockActive("dockSearch");
+      },
+      { enableHighAccuracy:true, timeout:9000, maximumAge:5000 }
+    );
+  }
+  $("dockLocate").addEventListener("click", locate);
 
-      toast("Locating…", 1400);
+  // -------------------------
+  // Search (CPYA → Nominatim, Athens-only bbox)
+  // -------------------------
+  function normalizeQuery(q){ return (q || "").trim(); }
+  function likelyCoords(q){
+    const s = q.replace(/\s+/g, " ").trim();
+    const m = s.match(/^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/);
+    if (!m) return null;
+    const lat = parseFloat(m[1]);
+    const lon = parseFloat(m[2]);
+    if (!isFinite(lat) || !isFinite(lon)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    return { lat, lon };
+  }
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          userLatLng = L.latLng(lat, lon);
+  async function tryCPYA(q){
+    if (!getSwitch($("swCPYA"))) return null;
 
-          if (!userMarker){
-            userMarker = L.circleMarker(userLatLng, {
-              radius: 8,
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.9
-            }).addTo(map);
-          } else {
-            userMarker.setLatLng(userLatLng);
-          }
+    const custom = normalizeQuery($("cpyaEndpoint").value);
+    const endpoints = [];
+    if (custom) endpoints.push(custom);
+    endpoints.push("/api/where", "/where", "/search");
 
-          map.setView(userLatLng, Math.max(map.getZoom(), 14));
-          toast("Location updated.");
-          setDockActive("dockSearch");
+    const variants = [
+      (ep) => `${ep}?q=${encodeURIComponent(q)}`,
+      (ep) => `${ep}?query=${encodeURIComponent(q)}`,
+      (ep) => `${ep}?text=${encodeURIComponent(q)}`
+    ];
 
-          // If we already have a destination selected, we can show a hint
-          if (selectedResult || destPin){
-            showPanel("Ready to route", "Tap Route to navigate.");
-          }
-        },
-        (err) => {
-          toast("Location failed. Enable GPS / permission.");
-          setDockActive("dockSearch");
-        },
-        { enableHighAccuracy: true, timeout: 9000, maximumAge: 5000 }
-      );
-    }
-
-    $("dockLocate").addEventListener("click", locate);
-
-    // -------------------------
-    // Destination
-    // -------------------------
-    function setDestination(latlng, name){
-      // If a result exists, treat as "selectedResult"
-      selectedResult = {
-        name: name || "Destination",
-        lat: latlng[0],
-        lon: latlng[1],
-        display: name || "Destination"
-      };
-
-      clearDestinationPin();
-      destPin = L.marker(latlng, { title: selectedResult.name }).addTo(map);
-
-      // Keep visible above dock/appbar
-      if (autoFit){
-        const b = L.latLngBounds([latlng]);
-        if (userLatLng) b.extend(userLatLng);
-        map.fitBounds(b.pad(0.25), { animate: true });
-      } else {
-        map.panTo(latlng, { animate: true });
+    for (const ep of endpoints){
+      for (const v of variants){
+        const url = v(ep);
+        try{
+          const res = await fetch(url, { headers: { "Accept": "application/json" } });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const parsed = parseCPYAResponse(data);
+          if (parsed && parsed.length) return parsed;
+        }catch(_){}
       }
     }
+    return null;
+  }
 
-    // -------------------------
-    // Search
-    // -------------------------
-    function normalizeQuery(q){
-      return (q || "").trim();
-    }
-
-    function likelyCoords(q){
-      // Accept "lat, lon" or "lat lon"
-      const s = q.replace(/\s+/g, " ").trim();
-      const m = s.match(/^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/);
-      if (!m) return null;
-      const lat = parseFloat(m[1]);
-      const lon = parseFloat(m[2]);
-      if (!isFinite(lat) || !isFinite(lon)) return null;
-      if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
-      return { lat, lon };
-    }
-
-    // CPYA backend preference:
-    // We try endpoint(s) in order:
-    // 1) value in settings input (if any)
-    // 2) /api/where
-    // 3) /where
-    // 4) /search
-    //
-    // Expected responses (we accept several shapes):
-    // { lat, lon, name? } OR { lat, lng, name? } OR { coordinates:[lat,lon], name? } OR { results:[...] }
-    async function tryCPYA(q){
-      const prefer = getSwitch($("swCPYA"));
-      if (!prefer) return null;
-
-      const custom = normalizeQuery($("cpyaEndpoint").value);
-      const endpoints = [];
-      if (custom) endpoints.push(custom);
-      endpoints.push("/api/where", "/where", "/search");
-
-      // We add query parameters in a few common forms:
-      const variants = [
-        (ep) => `${ep}?q=${encodeURIComponent(q)}`,
-        (ep) => `${ep}?query=${encodeURIComponent(q)}`,
-        (ep) => `${ep}?text=${encodeURIComponent(q)}`
-      ];
-
-      for (const ep of endpoints){
-        for (const v of variants){
-          const url = v(ep);
-          try{
-            const res = await fetch(url, { headers: { "Accept": "application/json" } });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const parsed = parseCPYAResponse(data);
-            if (parsed && parsed.length) return parsed;
-          }catch(_){
-            // ignore and continue
-          }
-        }
-      }
-      return null;
-    }
-
-    function parseCPYAResponse(data){
-      if (!data) return null;
-
-      // If already list-like
-      if (Array.isArray(data)){
-        return data.map((x) => ({
-          name: x.name || x.display_name || x.title || "Result",
-          lat: Number(x.lat ?? x.latitude ?? (x.coordinates?.[0])),
-          lon: Number(x.lon ?? x.lng ?? x.longitude ?? (x.coordinates?.[1])),
-          display: x.display_name || x.address || x.name || x.title || ""
-        })).filter(x => isFinite(x.lat) && isFinite(x.lon));
-      }
-
-      // {results:[...]}
-      if (Array.isArray(data.results)){
-        return parseCPYAResponse(data.results);
-      }
-
-      // Single object with coords
-      const lat = Number(data.lat ?? data.latitude ?? (data.coordinates?.[0]));
-      const lon = Number(data.lon ?? data.lng ?? data.longitude ?? (data.coordinates?.[1]));
-      if (isFinite(lat) && isFinite(lon)){
-        return [{
-          name: data.name || data.display_name || data.title || "Result",
-          lat, lon,
-          display: data.display_name || data.address || ""
-        }];
-      }
-
-      return null;
-    }
-
-    async function nominatimSearch(q){
-      // Restrict results to Athens bbox
-      const url = new URL("https://nominatim.openstreetmap.org/search");
-      url.searchParams.set("format", "json");
-      url.searchParams.set("q", q);
-      url.searchParams.set("limit", "8");
-      url.searchParams.set("bounded", "1");
-      url.searchParams.set("viewbox", `${ATHENS_BBOX.west},${ATHENS_BBOX.north},${ATHENS_BBOX.east},${ATHENS_BBOX.south}`);
-      url.searchParams.set("addressdetails", "1");
-
-      const res = await fetch(url.toString(), {
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "athens-nav (educational)"
-        }
-      });
-      if (!res.ok) throw new Error("Search failed");
-      const arr = await res.json();
-      return (arr || []).map(x => ({
-        name: x.display_name?.split(",")[0] || "Result",
-        lat: Number(x.lat),
-        lon: Number(x.lon),
-        display: x.display_name || ""
+  function parseCPYAResponse(data){
+    if (!data) return null;
+    if (Array.isArray(data)){
+      return data.map((x) => ({
+        name: x.name || x.display_name || x.title || "Result",
+        lat: Number(x.lat ?? x.latitude ?? (x.coordinates?.[0])),
+        lon: Number(x.lon ?? x.lng ?? x.longitude ?? (x.coordinates?.[1])),
+        display: x.display_name || x.address || x.name || x.title || ""
       })).filter(x => isFinite(x.lat) && isFinite(x.lon));
     }
+    if (Array.isArray(data.results)) return parseCPYAResponse(data.results);
 
-    function renderResults(results, q){
-      clearPanelList();
-      if (!results || results.length === 0){
-        const empty = document.createElement("div");
-        empty.className = "card";
-        empty.innerHTML = `
-          <div class="name">No results in Athens</div>
-          <div class="addr">Try a more specific name or a landmark. You can also paste coordinates: <span style="color:rgba(234,240,255,.85);">37.9756, 23.7347</span></div>
-        `;
-        addPanelCard(empty);
-        showPanel("No results", "Athens-only search returned nothing.");
-        return;
+    const lat = Number(data.lat ?? data.latitude ?? (data.coordinates?.[0]));
+    const lon = Number(data.lon ?? data.lng ?? data.longitude ?? (data.coordinates?.[1]));
+    if (isFinite(lat) && isFinite(lon)){
+      return [{
+        name: data.name || data.display_name || data.title || "Result",
+        lat, lon,
+        display: data.display_name || data.address || ""
+      }];
+    }
+    return null;
+  }
+
+  async function nominatimSearch(q){
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("q", q);
+    url.searchParams.set("limit", "8");
+    url.searchParams.set("bounded", "1");
+    url.searchParams.set("viewbox", `${ATHENS_BBOX.west},${ATHENS_BBOX.north},${ATHENS_BBOX.east},${ATHENS_BBOX.south}`);
+    url.searchParams.set("addressdetails", "1");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "athens-nav (educational)"
       }
+    });
+    if (!res.ok) throw new Error("Search failed");
+    const arr = await res.json();
+    return (arr || []).map(x => ({
+      name: x.display_name?.split(",")[0] || "Result",
+      lat: Number(x.lat),
+      lon: Number(x.lon),
+      display: x.display_name || ""
+    })).filter(x => isFinite(x.lat) && isFinite(x.lon));
+  }
 
-      showPanel(`Results (${results.length})`, `Tap one to select. Query: “${q}”`);
+  function renderResults(results, q){
+    clearPanelList();
+    if (!results || results.length === 0){
+      addPanelCard(makeInfoCard("No results in Athens", "Try a landmark. Or paste coordinates."));
+      showPanel("No results", "Athens-only search returned nothing.");
+      return;
+    }
 
-      const list = document.createElement("div");
-      list.className = "list";
+    showPanel(`Results (${results.length})`, `Tap a result to set destination • “${q}”`);
 
-      results.forEach((r, idx) => {
-        const card = document.createElement("div");
-        card.className = "card";
+    const list = document.createElement("div");
+    list.className = "list";
 
-        const title = document.createElement("div");
-        title.className = "row";
-        title.innerHTML = `
+    results.forEach((r) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="row">
           <div style="min-width:0;">
             <div class="name">${escapeHtml(r.name || "Result")}</div>
             <div class="addr">${escapeHtml(r.display || "")}</div>
           </div>
-          <div style="display:flex;gap:8px;flex:0 0 auto;">
-            <span class="chip primary" data-act="select">Select</span>
-          </div>
-        `;
-
-        const chips = document.createElement("div");
-        chips.className = "chips";
-        chips.innerHTML = `
+          <span class="chip primary" data-act="select">Select</span>
+        </div>
+        <div class="chips">
           <span class="chip" data-act="center">Center</span>
           <span class="chip" data-act="route">Route</span>
           <span class="chip" data-act="copy">Copy coords</span>
-        `;
-
-        card.appendChild(title);
-        card.appendChild(chips);
-
-        card.addEventListener("click", (e) => {
-          const act = e.target?.dataset?.act;
-          if (!act) return;
-
-          if (act === "select"){
-            selectResult(r);
-          }
-          if (act === "center"){
-            map.setView([r.lat, r.lon], Math.max(map.getZoom(), 15), { animate: true });
-            toast("Centered.");
-          }
-          if (act === "route"){
-            selectResult(r);
-            buildRoute();
-          }
-          if (act === "copy"){
-            const txt = `${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`;
-            copyToClipboard(txt);
-            toast("Copied.");
-          }
-        });
-
-        list.appendChild(card);
-      });
-
-      addPanelCard(list);
-    }
-
-    function selectResult(r){
-      selectedResult = r;
-      clearDestinationPin();
-      destPin = L.marker([r.lat, r.lon], { title: r.name || "Destination" }).addTo(map);
-
-      // create/refresh markers
-      clearSearchMarkers();
-      const marker = L.marker([r.lat, r.lon]).addTo(map).bindPopup(`<b>${escapeHtml(r.name || "Destination")}</b>`);
-      searchMarkers.push(marker);
-
-      if (autoFit){
-        const b = L.latLngBounds([ [r.lat, r.lon] ]);
-        if (userLatLng) b.extend(userLatLng);
-        map.fitBounds(b.pad(0.25), { animate: true });
-      } else {
-        map.setView([r.lat, r.lon], Math.max(map.getZoom(), 15), { animate: true });
-      }
-
-      showPanel("Selected", r.display || r.name || "");
-      renderSelectedCard(r);
-    }
-
-    function renderSelectedCard(r){
-      clearPanelList();
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <div class="name">${escapeHtml(r.name || "Destination")}</div>
-        <div class="addr">${escapeHtml(r.display || "")}</div>
-        <div class="chips">
-          <span class="chip primary" id="btnRouteNow">Route</span>
-          <span class="chip" id="btnCenterNow">Center</span>
-          <span class="chip" id="btnCopyNow">Copy coords</span>
-          <span class="chip" id="btnClearSel">Unselect</span>
         </div>
       `;
-      addPanelCard(card);
 
-      $("btnRouteNow").addEventListener("click", () => buildRoute());
-      $("btnCenterNow").addEventListener("click", () => {
-        map.setView([r.lat, r.lon], Math.max(map.getZoom(), 15), { animate: true });
-      });
-      $("btnCopyNow").addEventListener("click", () => {
-        copyToClipboard(`${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`);
-        toast("Copied.");
-      });
-      $("btnClearSel").addEventListener("click", () => {
-        selectedResult = null;
-        clearDestinationPin();
-        clearSearchMarkers();
-        showPanel("Ready", "Search for a place, then tap “Route”.");
-        toast("Unselected.");
-      });
-    }
+      card.addEventListener("click", (e) => {
+        const act = e.target?.dataset?.act;
+        if (!act) return;
 
-    async function doSearch(){
-      setDockActive("dockSearch");
-      const q = normalizeQuery($("q").value);
-      if (!q){
-        toast("Type a place to search.");
-        return;
-      }
-
-      // coords direct
-      const coords = likelyCoords(q);
-      if (coords){
-        if (softBoundsEnabled && !inBbox(coords.lat, coords.lon, ATHENS_BBOX)){
-          showPanel("Outside Athens", "Those coordinates are outside the Athens bounds.");
-          toast("Outside Athens bounds.");
-          return;
+        if (act === "select"){
+          selectResult(r);
+        } else if (act === "center"){
+          map.setView([r.lat, r.lon], Math.max(map.getZoom(), 15), { animate:true });
+          toast("Centered.");
+        } else if (act === "route"){
+          selectResult(r);
+          buildRoute();
+        } else if (act === "copy"){
+          copyToClipboard(`${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`);
+          toast("Copied.");
         }
-        setDestination([coords.lat, coords.lon], "Coordinates");
-        showPanel("Coordinates", `${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}`);
-        renderSelectedCard(selectedResult);
-        return;
-      }
+      });
 
-      clearRoute();
-      clearDestinationPin();
-      clearSearchMarkers();
-
-      showPanel("Searching…", `Looking for “${q}” in Athens.`);
-      clearPanelList();
-      addPanelCard(makeInfoCard("Searching…", "Using CPYA backend first, then OSM Nominatim if needed."));
-
-      try{
-        // 1) CPYA
-        let results = await tryCPYA(q);
-        if (!results || results.length === 0){
-          // 2) Nominatim fallback
-          results = await nominatimSearch(q);
-        }
-
-        // Filter strictly to Athens bbox if soft bounds are enabled (Athens-only promise)
-        if (softBoundsEnabled){
-          results = (results || []).filter(r => inBbox(r.lat, r.lon, ATHENS_BBOX));
-        }
-
-        lastResults = results || [];
-        renderResults(lastResults, q);
-
-      }catch(e){
-        clearPanelList();
-        addPanelCard(makeInfoCard("Search failed", "Network error or provider limit. Try again in a moment."));
-        showPanel("Search failed", "Please retry.");
-      }
-    }
-
-    $("btnGo").addEventListener("click", doSearch);
-    $("q").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") doSearch();
+      list.appendChild(card);
     });
 
-    // -------------------------
-    // Routing
-    // -------------------------
-    function currentRouter(){
-      // Leaflet Routing Machine's OSRM router
-      // Using public OSRM demo server. For production, use your own OSRM instance.
-      const serviceUrl = "https://router.project-osrm.org/route/v1";
-      const profile = routeMode === "driving" ? "driving" : (routeMode === "bike" ? "bike" : "foot");
-      return L.Routing.osrmv1({
-        serviceUrl,
-        profile,
-        timeout: 30 * 1000
-      });
+    addPanelCard(list);
+  }
+
+  function selectResult(r){
+    selectedResult = r;
+
+    // markers
+    clearDestination();
+    clearSearchMarkers();
+
+    const marker = L.marker([r.lat, r.lon]).addTo(map).bindPopup(`<b>${escapeHtml(r.name || "Destination")}</b>`);
+    searchMarkers.push(marker);
+
+    destMarker = marker;
+
+    showPanel("Selected", r.display || r.name || "");
+    renderSelectedCard(r);
+
+    if (autoFit){
+      const b = L.latLngBounds([[r.lat, r.lon]]);
+      if (userLatLng) b.extend(userLatLng);
+      map.fitBounds(b.pad(0.22), { animate:true });
+    } else {
+      map.panTo([r.lat, r.lon], { animate:true });
+    }
+  }
+
+  function renderSelectedCard(r){
+    clearPanelList();
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="name">${escapeHtml(r.name || "Destination")}</div>
+      <div class="addr">${escapeHtml(r.display || "")}</div>
+      <div class="chips">
+        <span class="chip primary" id="btnRouteNow">Route</span>
+        <span class="chip" id="btnCenterNow">Center</span>
+        <span class="chip" id="btnCopyNow">Copy coords</span>
+        <span class="chip" id="btnUnselect">Unselect</span>
+      </div>
+    `;
+    addPanelCard(card);
+
+    $("btnRouteNow").addEventListener("click", buildRoute);
+    $("btnCenterNow").addEventListener("click", () => {
+      map.setView([r.lat, r.lon], Math.max(map.getZoom(), 15), { animate:true });
+    });
+    $("btnCopyNow").addEventListener("click", () => {
+      copyToClipboard(`${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`);
+      toast("Copied.");
+    });
+    $("btnUnselect").addEventListener("click", () => {
+      selectedResult = null;
+      toast("Unselected.");
+      showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
+      clearPanelList();
+      addPanelCard(makeInfoCard("Tip", "Desktop: left click. Mobile: tap. Near Me: slide tab."));
+    });
+  }
+
+  async function doSearch(){
+    setDockActive("dockSearch");
+    const q = normalizeQuery($("q").value);
+    if (!q){ toast("Type a place to search."); return; }
+
+    const coords = likelyCoords(q);
+    if (coords){
+      if (athensLock && !inBbox(coords.lat, coords.lon, ATHENS_BBOX)){
+        toast("Outside Athens lock.");
+        showPanel("Outside Athens", "Those coordinates are outside the Athens-only area.");
+        return;
+      }
+      setDestination(coords.lat, coords.lon, "Coordinates");
+      return;
     }
 
-    function buildRoute(){
-      setDockActive("dockRoute");
+    clearRoute();
+    clearDestination();
+    clearSearchMarkers();
 
-      if (!userLatLng){
-        toast("First tap Locate to set your position.");
-        showPanel("Need your location", "Tap Locate, then route again.");
-        return;
-      }
+    showPanel("Searching…", `Looking for “${q}” in Athens.`);
+    clearPanelList();
+    addPanelCard(makeInfoCard("Searching…", "CPYA backend first, then Nominatim fallback."));
 
-      // Destination from selectedResult or pin
-      let dest = null;
-      let destName = "Destination";
+    try{
+      let results = await tryCPYA(q);
+      if (!results || results.length === 0) results = await nominatimSearch(q);
 
-      if (selectedResult){
-        dest = L.latLng(selectedResult.lat, selectedResult.lon);
-        destName = selectedResult.name || destName;
-      } else if (destPin){
-        dest = destPin.getLatLng();
-        destName = "Dropped pin";
-      } else if (lastResults && lastResults[0]){
-        dest = L.latLng(lastResults[0].lat, lastResults[0].lon);
-        destName = lastResults[0].name || destName;
-      }
+      // Athens-only filtering
+      results = (results || []).filter(r => inBbox(r.lat, r.lon, ATHENS_BBOX));
+      renderResults(results, q);
 
-      if (!dest){
-        toast("Search or drop a pin first.");
-        showPanel("No destination", "Search a place or long-press the map to drop a pin.");
-        return;
-      }
+    }catch(e){
+      clearPanelList();
+      addPanelCard(makeInfoCard("Search failed", "Network/provider issue. Try again."));
+      showPanel("Search failed", "Please retry.");
+    }
+  }
 
-      if (softBoundsEnabled && !inBbox(dest.lat, dest.lng, ATHENS_BBOX)){
-        toast("Destination outside Athens bounds.");
-        showPanel("Outside Athens", "Pick a destination inside Athens.");
-        return;
-      }
+  $("btnGo").addEventListener("click", doSearch);
+  $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
 
-      clearRoute();
+  // -------------------------
+  // Routing: different routers per mode (so times differ)
+  // -------------------------
+  function routerForMode(mode){
+    // Separate OSRM instances (reliable different timings)
+    // - Driving: router.project-osrm.org
+    // - Walking/Cycling: routing.openstreetmap.de (OSRM)
+    if (mode === "driving"){
+      return L.Routing.osrmv1({ serviceUrl: "https://router.project-osrm.org/route/v1" });
+    }
+    if (mode === "walking"){
+      return L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1" });
+    }
+    // cycling
+    return L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-bike/route/v1" });
+  }
 
-      const wps = [
+  function modeLabel(){
+    if (routeMode === "walking") return "Walking";
+    if (routeMode === "cycling") return "Cycling";
+    return "Driving";
+  }
+
+  function buildRoute(){
+    setDockActive("dockRoute");
+
+    if (!userLatLng){
+      toast("Tap Locate first.");
+      showPanel("Need your location", "Tap Locate, then Route again.");
+      return;
+    }
+
+    let dest = null;
+    let destName = "Destination";
+
+    if (selectedResult){
+      dest = L.latLng(selectedResult.lat, selectedResult.lon);
+      destName = selectedResult.name || destName;
+    } else if (destMarker){
+      dest = destMarker.getLatLng();
+      destName = destMarker.options?.title || "Dropped pin";
+    }
+
+    if (!dest){
+      toast("Tap map or search first.");
+      showPanel("No destination", "Tap the map to drop a pin, or search a place.");
+      return;
+    }
+
+    if (athensLock && !inBbox(dest.lat, dest.lng, ATHENS_BBOX)){
+      toast("Destination outside Athens lock.");
+      return;
+    }
+
+    clearRoute();
+
+    showPanel("Routing…", `${modeLabel()} • from you to ${destName}`);
+    clearPanelList();
+    addPanelCard(makeInfoCard("Calculating route…", "If it looks wrong, switch mode in settings (Driving/Walking/Cycling)."));
+
+    routingControl = L.Routing.control({
+      waypoints: [
         L.Routing.waypoint(userLatLng, "You"),
         L.Routing.waypoint(dest, destName)
-      ];
-
-      routingControl = L.Routing.control({
-        waypoints: wps,
-        router: currentRouter(),
-        addWaypoints: false,
-        draggableWaypoints: false,
-        fitSelectedRoutes: false, // we manage fitting
-        show: false,
-        routeWhileDragging: false,
-        lineOptions: {
-          addWaypoints: false,
-          styles: [{ opacity: 0.9, weight: 6 }]
-        },
-        createMarker: function(i, wp){
-          if (i === 0){
-            return L.circleMarker(wp.latLng, { radius: 8, weight: 2, opacity: 1, fillOpacity: 0.9 });
-          }
-          return L.marker(wp.latLng);
+      ],
+      router: routerForMode(routeMode),
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      show: false,
+      routeWhileDragging: false,
+      lineOptions: { addWaypoints:false, styles:[{ opacity:0.9, weight:6 }] },
+      createMarker: function(i, wp){
+        if (i === 0){
+          return L.circleMarker(wp.latLng, { radius: 8, weight: 2, opacity: 1, fillOpacity: 0.9 });
         }
-      }).addTo(map);
+        return L.marker(wp.latLng);
+      }
+    }).addTo(map);
 
-      showPanel("Routing…", `${routeModeLabel()} from your location to ${destName}`);
+    routingControl.on("routesfound", (e) => {
+      const route = e.routes?.[0];
+      if (!route) return;
+
+      if (routingLine) { try { map.removeLayer(routingLine); } catch {} }
+      routingLine = L.polyline(route.coordinates, { weight: 6, opacity: 0.9 }).addTo(map);
+
+      if (autoFit){
+        map.fitBounds(routingLine.getBounds().pad(0.15), { animate:true });
+      }
+
+      renderRoute(route, destName);
+      toast("Route ready.");
+    });
+
+    routingControl.on("routingerror", () => {
       clearPanelList();
-      addPanelCard(makeInfoCard("Calculating route…", "If it looks wrong, switch mode in the menu (Driving/Walking/Cycling)."));
+      addPanelCard(makeInfoCard("Routing failed", "Provider/network error. Try again or switch mode."));
+      showPanel("Routing failed", "Try again.");
+      toast("Routing failed.");
+    });
+  }
 
-      routingControl.on("routesfound", (e) => {
-        const route = e.routes && e.routes[0];
-        if (!route) return;
+  function renderRoute(route, destName){
+    clearPanelList();
 
-        lastRouteSummary = {
-          distance: route.summary?.totalDistance ?? null,
-          time: route.summary?.totalTime ?? null,
-          steps: route.instructions ?? route?.instructions ?? null
-        };
+    const dist = route.summary?.totalDistance ?? null;
+    const time = route.summary?.totalTime ?? null;
 
-        // Draw a visible line ourselves (more stable across LRM versions)
-        if (routingLine) { try { map.removeLayer(routingLine); } catch {} }
-        routingLine = L.polyline(route.coordinates, { weight: 6, opacity: 0.9 }).addTo(map);
+    const top = document.createElement("div");
+    top.className = "card";
+    top.innerHTML = `
+      <div class="row">
+        <div style="min-width:0;">
+          <div class="name">${modeLabel()} route</div>
+          <div class="addr">To: ${escapeHtml(destName)}</div>
+        </div>
+        <div style="text-align:right;flex:0 0 auto;">
+          <div style="font-weight:900;font-size:14px;">${formatDist(dist)}</div>
+          <div style="color:rgba(234,240,255,.72);font-size:12px;">${formatTime(time)}</div>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip primary" id="btnRecalcNow">Recalculate</span>
+        <span class="chip" id="btnClearRoute">Clear route</span>
+      </div>
+    `;
+    addPanelCard(top);
 
-        if (autoFit){
-          const b = routingLine.getBounds().pad(0.15);
-          map.fitBounds(b, { animate: true });
-        }
-
-        renderRouteSummary(destName, route);
-        toast("Route ready.");
-      });
-
-      routingControl.on("routingerror", () => {
-        clearPanelList();
-        addPanelCard(makeInfoCard("Routing failed", "Try again, or switch mode (Driving/Walking/Cycling)."));
-        showPanel("Routing failed", "OSRM error / network issue.");
-        toast("Routing failed.");
-      });
-    }
-
-    function routeModeLabel(){
-      if (routeMode === "driving") return "Driving";
-      if (routeMode === "bike") return "Cycling";
-      return "Walking";
-    }
-
-    function renderRouteSummary(destName, route){
+    $("btnRecalcNow").addEventListener("click", buildRoute);
+    $("btnClearRoute").addEventListener("click", () => {
+      clearRoute();
+      toast("Route cleared.");
+      showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
       clearPanelList();
+      addPanelCard(makeInfoCard("Tip", "Near Me sheet: tap to open, slide down to close."));
+    });
 
-      const dist = route.summary?.totalDistance ?? null;
-      const time = route.summary?.totalTime ?? null;
+    if (showSteps){
+      const stepsCard = document.createElement("div");
+      stepsCard.className = "card";
+      stepsCard.innerHTML = `<div class="name">Turn-by-turn</div><div class="addr">Tap a step to center.</div>`;
+      addPanelCard(stepsCard);
 
-      const top = document.createElement("div");
-      top.className = "card";
-      top.innerHTML = `
-        <div class="row">
-          <div style="min-width:0;">
-            <div class="name">${routeModeLabel()} route</div>
-            <div class="addr">To: ${escapeHtml(destName)}</div>
-          </div>
-          <div style="text-align:right;flex:0 0 auto;">
-            <div style="font-weight:800;font-size:14px;">${formatDist(dist)}</div>
-            <div style="color:rgba(234,240,255,.72);font-size:12px;">${formatTime(time)}</div>
-          </div>
-        </div>
-        <div class="chips">
-          <span class="chip primary" id="btnStartNav">Navigate</span>
-          <span class="chip" id="btnSwapMode">Switch mode</span>
-          <span class="chip" id="btnClearRoute">Clear route</span>
-        </div>
-      `;
-      addPanelCard(top);
-
-      $("btnStartNav").addEventListener("click", () => {
-        toast("Navigation UI is “lite” for now (route + steps). Google-level turn-by-turn is next.");
-        if (showSteps) $("panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
-
-      $("btnSwapMode").addEventListener("click", () => {
-        // quick cycle: driving -> foot -> bike -> driving
-        routeMode = (routeMode === "driving") ? "foot" : (routeMode === "foot" ? "bike" : "driving");
-        $("modeSelect").value = routeMode === "driving" ? "driving" : (routeMode === "bike" ? "bike" : "foot");
-        toast(`Mode: ${routeModeLabel()}`);
-        buildRoute();
-      });
-
-      $("btnClearRoute").addEventListener("click", () => {
-        clearRoute();
-        toast("Route cleared.");
-        showPanel("Selected", selectedResult?.display || "Ready to route again.");
-        if (selectedResult) renderSelectedCard(selectedResult);
-      });
-
-      if (showSteps){
-        const stepsCard = document.createElement("div");
-        stepsCard.className = "card";
-        stepsCard.innerHTML = `<div class="name">Turn-by-turn</div><div class="addr" id="stepsList"></div>`;
-        addPanelCard(stepsCard);
-
-        const stepsEl = stepsCard.querySelector("#stepsList");
-        const steps = extractSteps(route);
-        if (!steps || steps.length === 0){
-          stepsEl.textContent = "Steps unavailable (provider returned no instructions).";
-        } else {
-          // Render as compact list
-          const ul = document.createElement("div");
-          ul.style.display = "flex";
-          ul.style.flexDirection = "column";
-          ul.style.gap = "8px";
-
-          steps.slice(0, 40).forEach((s, i) => {
-            const item = document.createElement("div");
-            item.style.padding = "10px 10px";
-            item.style.borderRadius = "14px";
-            item.style.border = "1px solid rgba(255,255,255,.06)";
-            item.style.background = "rgba(255,255,255,.04)";
-            item.innerHTML = `
-              <div style="display:flex;justify-content:space-between;gap:10px;">
-                <div style="font-weight:650;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  ${escapeHtml(s.text)}
-                </div>
-                <div style="font-size:12px;color:rgba(234,240,255,.70);flex:0 0 auto;">
-                  ${s.dist ? formatDist(s.dist) : ""}
-                </div>
-              </div>
-            `;
-            ul.appendChild(item);
-          });
-
-          stepsEl.innerHTML = "";
-          stepsEl.appendChild(ul);
-        }
+      const steps = extractSteps(route);
+      if (!steps.length){
+        addPanelCard(makeInfoCard("Steps unavailable", "This router did not provide instructions."));
+        return;
       }
 
-      showPanel("Route ready", `${formatDist(dist)} • ${formatTime(time)} • ${routeModeLabel()}`);
+      const wrap = document.createElement("div");
+      wrap.className = "list";
+
+      steps.slice(0, 50).forEach((s) => {
+        const item = document.createElement("div");
+        item.className = "step";
+        item.innerHTML = `
+          <div class="stepLeft">
+            <div class="stepIcon">${stepIconSVG(s.type)}</div>
+            <div class="stepText">
+              <div class="t">${escapeHtml(s.text)}</div>
+              <div class="s">${escapeHtml(s.road || "")}</div>
+            </div>
+          </div>
+          <div class="stepDist">${s.dist ? formatDist(s.dist) : ""}</div>
+        `;
+        item.addEventListener("click", () => {
+          if (s.lat != null && s.lon != null) map.panTo([s.lat, s.lon], { animate:true });
+        });
+        wrap.appendChild(item);
+      });
+
+      addPanelCard(wrap);
     }
 
-    function extractSteps(route){
-      // LRM may provide route.instructions or route.legs[].steps with different shapes.
-      // We'll try multiple paths safely.
-      const out = [];
+    showPanel("Route ready", `${formatDist(dist)} • ${formatTime(time)} • ${modeLabel()}`);
+  }
 
-      if (Array.isArray(route.instructions)){
-        // Some versions put human text in .text
-        for (const ins of route.instructions){
-          const text = ins.text || ins.instruction || ins.type || "Step";
-          const dist = ins.distance ?? ins.dist ?? null;
-          out.push({ text, dist });
-        }
-        return out;
+  function extractSteps(route){
+    // Normalize steps from common LRM/OSRM shapes
+    const out = [];
+
+    // Shape A: route.instructions[]
+    if (Array.isArray(route.instructions)){
+      for (const ins of route.instructions){
+        out.push({
+          text: ins.text || ins.instruction || "Continue",
+          dist: ins.distance ?? ins.dist ?? null,
+          type: normalizeType(ins.type || ins.modifier || ""),
+          road: ins.road || ins.name || "",
+          lat: ins.latLng?.lat ?? ins.lat ?? null,
+          lon: ins.latLng?.lng ?? ins.lon ?? null
+        });
       }
-
-      // Some provide route.legs[0].steps, where step has "instruction"
-      if (Array.isArray(route.legs) && route.legs[0] && Array.isArray(route.legs[0].steps)){
-        for (const st of route.legs[0].steps){
-          const text = st.instruction || st.name || st.maneuver?.type || "Step";
-          const dist = st.distance ?? null;
-          out.push({ text, dist });
-        }
-        return out;
-      }
-
       return out;
     }
 
-    $("dockRoute").addEventListener("click", buildRoute);
-
-    $("btnReRoute").addEventListener("click", () => {
-      closeDrawer();
-      buildRoute();
-    });
-
-    // -------------------------
-    // UI helpers / cards
-    // -------------------------
-    function makeInfoCard(title, body){
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `<div class="name">${escapeHtml(title)}</div><div class="addr">${escapeHtml(body)}</div>`;
-      return card;
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]));
-    }
-
-    async function copyToClipboard(text){
-      try{
-        await navigator.clipboard.writeText(text);
-      }catch{
-        // fallback
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        try{ document.execCommand("copy"); }catch{}
-        ta.remove();
+    // Shape B: route.legs[].steps[] (OSRM-like)
+    const leg = route.legs?.[0];
+    if (leg && Array.isArray(leg.steps)){
+      for (const st of leg.steps){
+        const man = st.maneuver || {};
+        out.push({
+          text: st.instruction || buildTextFromManeuver(man, st.name),
+          dist: st.distance ?? null,
+          type: normalizeType(man.type || man.modifier || ""),
+          road: st.name || "",
+          lat: man.location ? man.location[1] : null,
+          lon: man.location ? man.location[0] : null
+        });
       }
     }
 
-    // -------------------------
-    // Settings wiring
-    // -------------------------
-    bindSwitch($("swFit"), true, (on) => {
-      autoFit = on;
-      toast(on ? "Auto-fit ON" : "Auto-fit OFF");
-    });
+    return out;
+  }
 
-    bindSwitch($("swSteps"), true, (on) => {
-      showSteps = on;
-      toast(on ? "Steps ON" : "Steps OFF");
-      // If a route exists, rerender summary so steps show/hide instantly
-      if (routingLine && routingControl){
-        // Rebuild the summary from lastRouteSummary is unreliable across versions;
-        // easiest: reroute quickly
-        buildRoute();
+  function buildTextFromManeuver(m, road){
+    const t = (m.type || "continue").replaceAll("_"," ");
+    const mod = m.modifier ? ` (${m.modifier})` : "";
+    return `${t}${mod}${road ? " onto " + road : ""}`;
+  }
+
+  function normalizeType(t){
+    const s = String(t || "").toLowerCase();
+    if (s.includes("uturn") || s === "uturn") return "uturn";
+    if (s.includes("roundabout")) return "roundabout";
+    if (s.includes("left")) return "left";
+    if (s.includes("right")) return "right";
+    if (s.includes("straight") || s.includes("continue") || s.includes("depart")) return "straight";
+    if (s.includes("arrive") || s.includes("destination")) return "arrive";
+    return "straight";
+  }
+
+  function stepIconSVG(type){
+    // simple but clear icon set: left/right/uturn/roundabout/straight/arrive
+    const c = "currentColor";
+    if (type === "left") return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M14 6l-6 6 6 6" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 12h10" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    if (type === "right") return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M10 6l6 6-6 6" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6 12h10" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    if (type === "uturn") return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M9 7h6a4 4 0 0 1 0 8H9" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M9 9 6 7l3-2" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    if (type === "roundabout") return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 6a6 6 0 1 0 6 6" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 12h-3l1.5-1.5" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 6V3l-1.5 1.5" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    if (type === "arrive") return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 22s7-4.5 7-12a7 7 0 1 0-14 0c0 7.5 7 12 7 12Z" stroke="${c}" stroke-width="2"/>
+        <path d="M12 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="${c}" stroke-width="2"/>
+      </svg>`;
+    // straight/default
+    return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 5v14" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 9l4-4 4 4" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+  }
+
+  $("dockRoute").addEventListener("click", buildRoute);
+
+  // -------------------------
+  // Near Me (tap + slide)
+  // -------------------------
+  const nearPanel = $("nearPanel");
+  let nearOpen = false;
+
+  function setNear(open){
+    nearOpen = !!open;
+    nearPanel.classList.toggle("open", nearOpen);
+    $("nearSub").textContent = nearOpen ? "Slide down to close" : "Tap to open • Slide down to close";
+    setDockActive("dockNear");
+  }
+
+  $("dockNear").addEventListener("click", () => setNear(!nearOpen));
+  $("nearClose").addEventListener("click", () => setNear(false));
+
+  // Tap header toggles open/close
+  $("nearHandle").addEventListener("click", (e) => {
+    // Avoid toggle when clicking close button
+    if (e.target.closest("#nearClose")) return;
+    setNear(!nearOpen);
+  });
+
+  // Slide gesture: simple drag-to-close/open on mobile
+  let startY = null;
+  let startOpen = false;
+  $("nearHandle").addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    startY = e.touches[0].clientY;
+    startOpen = nearOpen;
+  }, { passive:true });
+
+  $("nearHandle").addEventListener("touchmove", (e) => {
+    if (startY == null) return;
+    const y = e.touches[0].clientY;
+    const dy = y - startY;
+    // If open and dragging down significantly => close
+    if (startOpen && dy > 35) setNear(false);
+    // If closed and dragging up significantly => open
+    if (!startOpen && dy < -35) setNear(true);
+  }, { passive:true });
+
+  $("nearHandle").addEventListener("touchend", () => { startY = null; }, { passive:true });
+
+  // Overpass query (nearby amenities)
+  const NEAR_TAGS = {
+    pharmacy: 'amenity=pharmacy',
+    atm: 'amenity=atm',
+    supermarket: 'shop=supermarket',
+    cafe: 'amenity=cafe',
+    restaurant: 'amenity=restaurant',
+    fuel: 'amenity=fuel',
+    hospital: 'amenity=hospital',
+    police: 'amenity=police',
+    parking: 'amenity=parking'
+  };
+
+  let nearMarkers = [];
+  function clearNearMarkers(){
+    for (const m of nearMarkers) map.removeLayer(m);
+    nearMarkers = [];
+  }
+
+  async function overpassNearby(lat, lon, radius, tagExpr){
+    // Query nodes/ways/relations, but we mostly map nodes + way center fallback
+    const q = `
+      [out:json][timeout:25];
+      (
+        node(around:${radius},${lat},${lon})[${tagExpr}];
+        way(around:${radius},${lat},${lon})[${tagExpr}];
+        relation(around:${radius},${lat},${lon})[${tagExpr}];
+      );
+      out center 40;
+    `;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: q
+    });
+    if (!res.ok) throw new Error("Overpass failed");
+    const data = await res.json();
+    return data.elements || [];
+  }
+
+  function getElemLatLon(el){
+    if (el.type === "node") return { lat: el.lat, lon: el.lon };
+    if (el.center) return { lat: el.center.lat, lon: el.center.lon };
+    return null;
+  }
+
+  function elemName(el){
+    const t = el.tags || {};
+    return t.name || t.brand || t.operator || "Unnamed";
+  }
+
+  function elemAddr(el){
+    const t = el.tags || {};
+    const parts = [];
+    if (t["addr:street"]) parts.push(t["addr:street"]);
+    if (t["addr:housenumber"]) parts.push(t["addr:housenumber"]);
+    if (t["addr:city"]) parts.push(t["addr:city"]);
+    return parts.join(" ") || "";
+  }
+
+  $("nearGo").addEventListener("click", async () => {
+    if (!userLatLng){
+      toast("Tap Locate first.");
+      return;
+    }
+    const type = $("nearType").value;
+    const radius = Number($("nearRadius").value) || 800;
+    const tagExpr = NEAR_TAGS[type] || 'amenity=pharmacy';
+
+    $("nearList").innerHTML = "";
+    $("nearList").appendChild(makeInfoCard("Scanning…", "Finding places near you."));
+
+    try{
+      clearNearMarkers();
+      const elems = await overpassNearby(userLatLng.lat, userLatLng.lng, radius, tagExpr);
+
+      // Filter inside Athens when locked
+      const items = elems.map(el => {
+        const ll = getElemLatLon(el);
+        if (!ll) return null;
+        if (athensLock && !inBbox(ll.lat, ll.lon, ATHENS_BBOX)) return null;
+        const name = elemName(el);
+        const addr = elemAddr(el);
+        return { name, addr, lat: ll.lat, lon: ll.lon, tags: el.tags || {} };
+      }).filter(Boolean);
+
+      // Sort by distance
+      items.sort((a,b) => {
+        const da = map.distance(userLatLng, [a.lat,a.lon]);
+        const db = map.distance(userLatLng, [b.lat,b.lon]);
+        return da - db;
+      });
+
+      $("nearList").innerHTML = "";
+      if (!items.length){
+        $("nearList").appendChild(makeInfoCard("No results", "Try a bigger radius."));
+        return;
       }
-    });
 
-    bindSwitch($("swCPYA"), true, (on) => toast(on ? "CPYA preferred" : "CPYA disabled"));
+      const frag = document.createDocumentFragment();
+      items.slice(0, 30).forEach((it) => {
+        const d = map.distance(userLatLng, [it.lat,it.lon]);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="row">
+            <div style="min-width:0;">
+              <div class="name">${escapeHtml(it.name)}</div>
+              <div class="addr">${escapeHtml(it.addr || "Athens")}</div>
+            </div>
+            <div style="text-align:right;flex:0 0 auto;">
+              <div style="font-weight:900;font-size:13px;">${formatDist(d)}</div>
+              <div style="font-size:12px;color:rgba(234,240,255,.70);">${escapeHtml(type)}</div>
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip primary" data-act="pin">Pin</span>
+            <span class="chip" data-act="route">Route</span>
+            <span class="chip" data-act="center">Center</span>
+          </div>
+        `;
+        card.addEventListener("click", (e) => {
+          const act = e.target?.dataset?.act;
+          if (!act) return;
+          if (act === "pin"){
+            setDestination(it.lat, it.lon, it.name);
+            setNear(false);
+          } else if (act === "route"){
+            setDestination(it.lat, it.lon, it.name);
+            setNear(false);
+            buildRoute();
+          } else if (act === "center"){
+            map.setView([it.lat,it.lon], Math.max(map.getZoom(), 15), { animate:true });
+          }
+        });
 
-    bindSwitch($("swBounds"), true, (on) => {
-      softBoundsEnabled = on;
-      applyBounds();
-      toast(on ? "Soft bounds ON" : "Bounds OFF");
-    });
+        const m = L.circleMarker([it.lat,it.lon], { radius: 7, weight: 2, opacity: 1, fillOpacity: 0.75 })
+          .addTo(map)
+          .bindPopup(`<b>${escapeHtml(it.name)}</b><br/>${escapeHtml(it.addr || "")}`);
+        nearMarkers.push(m);
 
-    $("modeSelect").addEventListener("change", () => {
-      const v = $("modeSelect").value;
-      routeMode = (v === "driving") ? "driving" : (v === "bike" ? "bike" : "foot");
-      toast(`Mode: ${routeModeLabel()}`);
-    });
+        frag.appendChild(card);
+      });
 
-    $("btnRecenter").addEventListener("click", () => {
-      closeDrawer();
-      map.setView(ATHENS_CENTER, 12.5, { animate: true });
-      toast("Recentered Athens.");
-    });
+      $("nearList").appendChild(frag);
+      toast("Near me updated.");
 
-    // Dock: Search tab just opens panel hint if hidden
-    $("dockSearch").addEventListener("click", () => {
-      setDockActive("dockSearch");
-      if (!$("panel").classList.contains("show")){
-        showPanel("Ready", "Search for a place, then tap “Route”.");
-        clearPanelList();
-        addPanelCard(makeInfoCard("Tip", "Search a place or paste coordinates. Long-press the map to drop a destination pin."));
-      }
-    });
+    }catch(e){
+      $("nearList").innerHTML = "";
+      $("nearList").appendChild(makeInfoCard("Near me failed", "Overpass may be busy. Try again."));
+      toast("Near me failed.");
+    }
+  });
 
-    // Close panel if user taps map (but not if dragging)
-    let didDrag = false;
-    map.on("dragstart", () => didDrag = true);
-    map.on("dragend", () => setTimeout(() => didDrag = false, 50));
-    map.on("click", () => {
-      if (didDrag) return;
-      // keep panel open (mobile UX), but we can hide if user wants:
-      // hidePanel();
-    });
+  // -------------------------
+  // Settings wiring
+  // -------------------------
+  $("modeSelect").addEventListener("change", () => {
+    routeMode = $("modeSelect").value;
+    toast(`Mode: ${modeLabel()}`);
+  });
 
-    // -------------------------
-    // Initial panel content
-    // -------------------------
-    showPanel("Ready", "Search for a place, then tap “Route”.");
+  bindSwitch($("swFit"), true, (on) => { autoFit = on; toast(on ? "Auto-fit ON" : "Auto-fit OFF"); });
+  bindSwitch($("swSteps"), true, (on) => { showSteps = on; toast(on ? "Steps ON" : "Steps OFF"); });
+
+  bindSwitch($("swCPYA"), true, (on) => toast(on ? "CPYA preferred" : "CPYA disabled"));
+
+  bindSwitch($("swLock"), true, (on) => {
+    athensLock = on;
+    applyAthensLock();
+    toast(on ? "Athens lock ON" : "Lock OFF");
+  });
+
+  $("btnReRoute").addEventListener("click", () => { closeDrawer(); buildRoute(); });
+
+  $("btnRecenter").addEventListener("click", () => {
+    closeDrawer();
+    map.setView(ATHENS_CENTER, 12.6, { animate:true });
+    toast("Recentered Athens.");
+  });
+
+  // Dock actions
+  $("dockSearch").addEventListener("click", () => {
+    setDockActive("dockSearch");
+    showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
     clearPanelList();
-    addPanelCard(makeInfoCard("Quick start", "1) Tap Locate  •  2) Search a destination  •  3) Tap Route"));
+    addPanelCard(makeInfoCard("Quick start", "1) Locate • 2) Tap map or Search • 3) Route • 4) Near Me (slide)"));
+  });
 
-    // Finish loading
-    setLoad(80);
-    tiles.on("load", () => {
-      setLoad(100);
-      setTimeout(() => { $("loading").style.display = "none"; }, 250);
-    });
-    // Safety fallback if tile load event doesn't fire quickly
-    setTimeout(() => {
-      $("loading").style.display = "none";
-    }, 2500);
+  $("btnClosePanel").addEventListener("click", hidePanel);
 
-    // Optional: attempt location on first load (non-blocking)
-    // Comment out if you don't want this behavior.
-    setTimeout(() => {
-      toast("Tip: Tap Locate to start.");
-    }, 1400);
-  </script>
+  // -------------------------
+  // Clipboard
+  // -------------------------
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand("copy"); }catch{}
+      ta.remove();
+    }
+  }
+
+  // -------------------------
+  // Time widget
+  // -------------------------
+  function tickTime(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mm = String(now.getMinutes()).padStart(2,"0");
+    $("timeVal").textContent = `${hh}:${mm}`;
+    const opts = { weekday:"short", day:"2-digit", month:"short" };
+    $("dateVal").textContent = now.toLocaleDateString(undefined, opts);
+  }
+  tickTime();
+  setInterval(tickTime, 1000 * 15);
+
+  // -------------------------
+  // Weather widget (Open-Meteo, no key)
+  // -------------------------
+  const WMO = {
+    0:"Clear", 1:"Mainly clear", 2:"Partly cloudy", 3:"Overcast",
+    45:"Fog", 48:"Rime fog",
+    51:"Drizzle", 53:"Drizzle", 55:"Drizzle",
+    61:"Rain", 63:"Rain", 65:"Rain",
+    71:"Snow", 73:"Snow", 75:"Snow",
+    80:"Rain showers", 81:"Rain showers", 82:"Rain showers",
+    95:"Thunderstorm", 96:"Thunderstorm", 99:"Thunderstorm"
+  };
+
+  function weatherIcon(code){
+    // Minimal icon set
+    const c = "currentColor";
+    // thunder
+    if ([95,96,99].includes(code)) return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 13l-3 6h3l-2 4" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    // rain
+    if ([61,63,65,80,81,82,51,53,55].includes(code)) return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M10 18l-1 3M14 18l-1 3M18 18l-1 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    // snow
+    if ([71,73,75].includes(code)) return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 18v4M10 20h4M10.5 18.5l3 3M13.5 18.5l-3 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    // cloudy
+    if ([2,3,45,48].includes(code)) return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 14a5 5 0 0 1 2-9 6 6 0 0 1 11 3" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 14h10a3 3 0 0 1 0 6H9a3 3 0 0 1-1-6Z" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    // clear / mostly clear
+    return `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="${c}" stroke-width="2"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.5 4.5l1.5 1.5M18 18l1.5 1.5M19.5 4.5 18 6M6 18l-1.5 1.5"
+          stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+  }
+
+  async function updateWeather(){
+    try{
+      const lat = ATHENS_CENTER[0], lon = ATHENS_CENTER[1];
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.searchParams.set("latitude", lat);
+      url.searchParams.set("longitude", lon);
+      url.searchParams.set("current_weather", "true");
+      url.searchParams.set("timezone", "auto");
+
+      const res = await fetch(url.toString(), { headers: { "Accept":"application/json" }});
+      if (!res.ok) throw new Error("weather");
+      const data = await res.json();
+      const cw = data.current_weather;
+      if (!cw) throw new Error("no current");
+      const temp = Math.round(cw.temperature);
+      const code = Number(cw.weathercode);
+      $("weatherVal").textContent = `${temp}°C`;
+      $("weatherSub").textContent = WMO[code] || "Athens";
+      $("weatherIcon").innerHTML = weatherIcon(code);
+    }catch{
+      $("weatherVal").textContent = "--";
+      $("weatherSub").textContent = "Weather unavailable";
+      $("weatherIcon").innerHTML = "";
+    }
+  }
+  updateWeather();
+  setInterval(updateWeather, 1000 * 60 * 10);
+
+  // -------------------------
+  // Compass (device orientation)
+  // -------------------------
+  let compassEnabled = false;
+
+  function setHeading(deg){
+    const d = (deg == null || !isFinite(deg)) ? null : ((deg % 360) + 360) % 360;
+    $("headingTxt").textContent = d == null ? "--°" : `${Math.round(d)}°`;
+    if (d == null) return;
+    // rotate needle opposite to heading (so needle points north relative)
+    $("needle").style.transform = `rotate(${d}deg)`;
+  }
+
+  function onOrientation(e){
+    // iOS: webkitCompassHeading. Others: alpha (0..360)
+    let heading = null;
+    if (typeof e.webkitCompassHeading === "number"){
+      heading = e.webkitCompassHeading; // already degrees
+    } else if (typeof e.alpha === "number"){
+      heading = 360 - e.alpha;
+    }
+    setHeading(heading);
+  }
+
+  async function enableCompass(){
+    try{
+      // iOS permission gate
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"){
+        const r = await DeviceOrientationEvent.requestPermission();
+        if (r !== "granted") throw new Error("permission");
+      }
+      window.addEventListener("deviceorientation", onOrientation, true);
+      compassEnabled = true;
+      $("btnCompass").textContent = "On";
+      toast("Compass enabled.");
+    }catch{
+      toast("Compass not available (browser/permission).");
+    }
+  }
+
+  $("btnCompass").addEventListener("click", () => {
+    if (!compassEnabled) enableCompass();
+    else toast("Compass already on.");
+  });
+
+  // -------------------------
+  // Initial UI
+  // -------------------------
+  showPanel("Ready", "Tap the map to drop a pin • or Search • then Route.");
+  clearPanelList();
+  addPanelCard(makeInfoCard("Quick start", "1) Locate • 2) Tap map or Search • 3) Route • 4) Near Me (tap/slide)"));
+
+  // -------------------------
+  // Finish loading
+  // -------------------------
+  setLoad(75);
+  tiles.on("load", () => {
+    setLoad(100);
+    setTimeout(() => { $("loading").style.display = "none"; }, 220);
+  });
+  setTimeout(() => { $("loading").style.display = "none"; }, 2200);
+
+</script>
 </body>
 </html>
